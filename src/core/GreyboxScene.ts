@@ -42,20 +42,20 @@ export class GreyboxScene implements IGraphicsEngine {
   }
 
   private setupLighting(): void {
-    // Ánh sáng môi trường
-    const ambientLight = new THREE.AmbientLight(0xddeeff, 0.65);
+    // Ánh sáng môi trường tươi sáng
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     this.scene.add(ambientLight);
 
-    // Ánh sáng mặt trời tạo bóng khối low-poly
-    const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
-    sunLight.position.set(40, 60, 30);
+    // Ánh sáng mặt trời nhiệt đới rực rỡ tạo bóng sắc nét
+    const sunLight = new THREE.DirectionalLight(0xfffaed, 1.6);
+    sunLight.position.set(35, 55, 40);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
     this.scene.add(sunLight);
 
-    // Ánh sáng phản chiếu từ đại dương
-    const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x1e3f66, 0.4);
+    // Ánh sáng phản chiếu bầu trời và biển đảo
+    const hemiLight = new THREE.HemisphereLight(0xbae6fd, 0x0284c7, 0.55);
     this.scene.add(hemiLight);
   }
 
@@ -321,8 +321,15 @@ export class GreyboxScene implements IGraphicsEngine {
     this.scene.add(this.trajectoryLine);
   }
 
+  public setTrajectoryVisible(visible: boolean): void {
+    if (this.trajectoryLine) {
+      this.trajectoryLine.visible = visible;
+    }
+  }
+
   public dispose(): void {
     this.eventUnsubscribers.forEach((un) => un());
     this.eventUnsubscribers = [];
   }
 }
+

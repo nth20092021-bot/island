@@ -3,55 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Treasure Island - Hòn Đảo Kho Báu Low-Poly</title>
+  <title>3D Treasure Island - Hòn Đảo Kho Báu</title>
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <div id="canvas-container"></div>
+  <!-- Vùng chứa WebGL 3D toàn màn hình -->
+  <div id="app"></div>
 
-  <div id="ui-hud">
-    <!-- Header -->
-    <header>
-      <div class="logo-group">
-        <h1>🏝️ 3D Treasure Island</h1>
-        <p>Kiến trúc: Core (Antigravity) & Graphics (Codex) | 28 Rương Kho Báu</p>
-      </div>
-      <div class="status-badge">
-        <span class="pulse-dot"></span>
-        <span id="system-status">Sẵn sàng (Chế độ Greybox)</span>
-      </div>
-    </header>
+  <!-- 1. Icon Bánh Răng cài đặt duy nhất ở góc trên bên phải -->
+  <button id="btn-settings" class="icon-btn" title="Cài đặt">⚙️</button>
 
-    <!-- Winner Announcement Banner -->
-    <div id="winner-banner">
-      <h2>🏆 RƯƠNG CHIẾN THẮNG ĐÃ MỞ! 🏆</h2>
-      <div id="winner-name">Tên Học Sinh</div>
-      <div id="winner-chest-id">Rương #00</div>
+  <!-- Menu Cài Đặt (Popover) -->
+  <div id="settings-popover" class="popover hidden">
+    <div class="popover-header">
+      <span>Cài đặt hệ thống</span>
+      <button id="btn-close-settings" class="close-btn">&times;</button>
     </div>
-
-    <!-- Controls Footer -->
-    <footer>
-      <div class="progress-container">
-        <div id="progress-bar"></div>
-      </div>
-      <div class="controls-row">
-        <button id="btn-spin-random" class="btn btn-primary">
-          <span>🎲</span> Quay ngẫu nhiên
-        </button>
-
+    <div class="popover-body">
+      <div class="form-group">
+        <label for="select-chest">🎯 Chọn rương chiến thắng:</label>
         <select id="select-chest">
-          <option value="">-- Chọn rương chỉ định (1 - 28) --</option>
+          <option value="">-- Ngẫu nhiên --</option>
         </select>
-
-        <button id="btn-spin-target" class="btn btn-secondary">
-          <span>🎯</span> Bay tới rương đã chọn
-        </button>
-
-        <button id="btn-reset-cam" class="btn btn-secondary">
-          <span>🔄</span> Reset Camera
-        </button>
       </div>
-    </footer>
+
+      <div class="form-group row">
+        <label for="toggle-trajectory">🛤️ Đường bay CatmullRom</label>
+        <input type="checkbox" id="toggle-trajectory" checked />
+      </div>
+
+      <div class="form-actions">
+        <button id="btn-reset-cam" class="btn">🔄 Reset Camera</button>
+      </div>
+
+      <div class="students-list-group">
+        <label>📋 28 Học sinh:</label>
+        <div id="students-preview" class="students-scroll"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Nút BẮT ĐẦU duy nhất ở chính giữa phía dưới màn hình -->
+  <div id="start-container">
+    <button id="btn-start" class="start-btn">
+      <span class="play-icon">▶</span>
+      <span>BẮT ĐẦU</span>
+    </button>
+  </div>
+
+  <!-- Popup Vinh danh người chiến thắng -->
+  <div id="winner-banner" class="hidden">
+    <div class="winner-trophy">🏆</div>
+    <div id="winner-name">Tên Học Sinh</div>
+    <div id="winner-chest-id">Rương May Mắn #00</div>
+    <button id="btn-close-winner" class="btn btn-primary" style="margin-top: 10px;">Chơi lại</button>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

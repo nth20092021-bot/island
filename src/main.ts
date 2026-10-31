@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ChestManager } from './core/ChestManager';
 import { CameraDirector } from './core/CameraDirector';
 import { GreyboxScene } from './core/GreyboxScene';
-import { globalEventBus, Student } from './core/EventBus';
+import { globalEventBus, Student, ChestData } from './core/EventBus';
 
 class GameApp {
   private renderer!: THREE.WebGLRenderer;
@@ -13,17 +13,23 @@ class GameApp {
   private chestManager!: ChestManager;
   private cameraDirector!: CameraDirector;
   private graphicsEngine!: GreyboxScene;
+  private allChests: ChestData[] = [];
+  private showTrajectory: boolean = true;
 
-  // UI Elements
-  private btnSpinRandom!: HTMLButtonElement;
-  private btnSpinTarget!: HTMLButtonElement;
-  private btnResetCam!: HTMLButtonElement;
+  // Ultra-Minimalist UI Elements
+  private btnStart!: HTMLButtonElement;
+  private startContainer!: HTMLElement;
+  private btnSettings!: HTMLButtonElement;
+  private settingsPopover!: HTMLElement;
+  private btnCloseSettings!: HTMLButtonElement;
   private selectChest!: HTMLSelectElement;
-  private progressBar!: HTMLElement;
+  private toggleTrajectory!: HTMLInputElement;
+  private btnResetCam!: HTMLButtonElement;
+  private studentsPreview!: HTMLElement;
   private winnerBanner!: HTMLElement;
   private winnerNameEl!: HTMLElement;
   private winnerChestIdEl!: HTMLElement;
-  private systemStatusEl!: HTMLElement;
+  private btnCloseWinner!: HTMLButtonElement;
 
   constructor() {
     this.initDOM();
@@ -37,137 +43,157 @@ class GameApp {
   }
 
   private initDOM(): void {
-    this.btnSpinRandom = document.getElementById('btn-spin-random') as HTMLButtonElement;
-    this.btnSpinTarget = document.getElementById('btn-spin-target') as HTMLButtonElement;
-    this.btnResetCam = document.getElementById('btn-reset-cam') as HTMLButtonElement;
+    this.btnStart = document.getElementById('btn-start') as HTMLButtonElement;
+    this.startContainer = document.getElementById('start-container') as HTMLElement;
+    this.btnSettings = document.getElementById('btn-settings') as HTMLButtonElement;
+    this.settingsPopover = document.getElementById('settings-popover') as HTMLElement;
+    this.btnCloseSettings = document.getElementById('btn-close-settings') as HTMLButtonElement;
     this.selectChest = document.getElementById('select-chest') as HTMLSelectElement;
-    this.progressBar = document.getElementById('progress-bar') as HTMLElement;
+    this.toggleTrajectory = document.getElementById('toggle-trajectory') as HTMLInputElement;
+    this.btnResetCam = document.getElementById('btn-reset-cam') as HTMLButtonElement;
+    this.studentsPreview = document.getElementById('students-preview') as HTMLElement;
     this.winnerBanner = document.getElementById('winner-banner') as HTMLElement;
     this.winnerNameEl = document.getElementById('winner-name') as HTMLElement;
     this.winnerChestIdEl = document.getElementById('winner-chest-id') as HTMLElement;
-    this.systemStatusEl = document.getElementById('system-status') as HTMLElement;
+    this.btnCloseWinner = document.getElementById('btn-close-winner') as HTMLButtonElement;
   }
 
   private initThree(): void {
-    const container = document.getElementById('canvas-container')!;
+    const container = document.getElementById('app')!;
 
-    // 1. Scene
+    // 1. Scene nhiệt đới tươi sáng
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0a1628);
-    this.scene.fog = new THREE.FogExp2(0x0a1628, 0.008);
+    this.scene.background = new THREE.Color(0x38bdf8); // Bầu trời nhiệt đới trong xanh
+    this.scene.fog = new THREE.FogExp2(0x7dd3fc, 0.003); // Sương mờ chân trời dịu mắt
 
-    // 2. Camera
+    // 2. Camera: Vị trí ban đầu nhìn thẳng góc 45 độ xuống hòn đảo và 28 chiếc rương
     this.camera = new THREE.PerspectiveCamera(
       48,
       window.innerWidth / window.innerHeight,
       0.1,
       1000
     );
+    this.camera.position.set(0, 35, 65);
+    this.camera.lookAt(0, 5, 0);
 
-    // 3. Renderer
+    // 3. Renderer: gắn trực tiếp vào #app kích thước 100vw x 100vh
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.15;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    container.innerHTML = '';
     container.appendChild(this.renderer.domElement);
   }
 
   private initCore(): void {
-    // 1. Khởi tạo ChestManager với 28 rương
+    // 1. Quản lý 28 rương
     this.chestManager = new ChestManager();
-    const chests = this.chestManager.generateChests();
+    this.allChests = this.chestManager.generateChests();
 
-    // 2. Khởi tạo CameraDirector
+    // 2. Đạo diễn Camera
     this.cameraDirector = new CameraDirector(this.camera);
 
-    // 3. Khởi tạo Engine đồ họa (ở Giai đoạn 1 là GreyboxScene)
+    // 3. Khởi tạo Đồ họa Greybox
     this.graphicsEngine = new GreyboxScene();
-    this.graphicsEngine.init(this.scene, this.camera, this.renderer, chests);
+    this.graphicsEngine.init(this.scene, this.camera, this.renderer, this.allChests);
 
-    // 4. Đổ dữ liệu 28 học sinh vào Dropdown
-    chests.forEach((chest) => {
+    // 4. Nạp dữ liệu 28 học sinh vào Popover cài đặt
+    this.allChests.forEach((chest) => {
+      // Dropdown chọn rương chỉ định
       const option = document.createElement('option');
       option.value = chest.id.toString();
-      option.textContent = `#${chest.id} - ${chest.student.name} (Tầng ${chest.index < 10 ? 'Bãi biển' : chest.index < 20 ? 'Sườn núi' : 'Đỉnh núi lửa'})`;
+      option.textContent = `#${chest.id} - ${chest.student.name}`;
       this.selectChest.appendChild(option);
+
+      // Danh sách cuộn xem nhanh 28 học sinh
+      const item = document.createElement('div');
+      item.className = 'student-item';
+      item.innerHTML = `<span>#${chest.id} ${chest.student.name}</span> <span style="color:#38bdf8;">Tầng ${chest.index < 10 ? 'Bãi biển' : chest.index < 20 ? 'Sườn đồi' : 'Đỉnh núi'}</span>`;
+      this.studentsPreview.appendChild(item);
     });
   }
 
   private initUIEvents(): void {
-    // Nút quay ngẫu nhiên
-    this.btnSpinRandom.addEventListener('click', () => {
+    // 1. Nút BẮT ĐẦU duy nhất ở màn hình chính
+    this.btnStart.addEventListener('click', () => {
       if (this.cameraDirector.isCameraFlying()) return;
-      const winner = this.chestManager.selectWinner();
-      this.startSpin(winner);
-    });
 
-    // Nút bay tới rương chỉ định
-    this.btnSpinTarget.addEventListener('click', () => {
-      if (this.cameraDirector.isCameraFlying()) return;
+      // Ẩn nút Bắt đầu hoàn toàn để nhường 100% không gian cho 3D
+      this.startContainer.classList.add('hidden');
+      this.settingsPopover.classList.add('hidden');
+
       const targetId = parseInt(this.selectChest.value, 10);
-      if (isNaN(targetId)) {
-        alert('Vui lòng chọn 1 rương trong danh sách!');
-        return;
-      }
-      const winner = this.chestManager.selectWinner(targetId);
-      this.startSpin(winner);
+      const winner = isNaN(targetId)
+        ? this.chestManager.selectWinner()
+        : this.chestManager.selectWinner(targetId);
+
+      this.startFlight(winner);
     });
 
-    // Nút Reset camera
+    // 2. Toggle Menu Bánh Răng (⚙️)
+    this.btnSettings.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.settingsPopover.classList.toggle('hidden');
+    });
+
+    this.btnCloseSettings.addEventListener('click', () => {
+      this.settingsPopover.classList.add('hidden');
+    });
+
+    // Bấm ra ngoài đóng Popover
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (!this.settingsPopover.contains(target) && target !== this.btnSettings) {
+        this.settingsPopover.classList.add('hidden');
+      }
+    });
+
+    // 3. Reset Camera
     this.btnResetCam.addEventListener('click', () => {
       this.cameraDirector.resetToOverview(false);
-      this.winnerBanner.classList.remove('visible');
-      this.progressBar.style.width = '0%';
-      this.systemStatusEl.textContent = 'Sẵn sàng (Chế độ Greybox)';
-      this.setButtonsDisabled(false);
+      this.winnerBanner.classList.add('hidden');
+      this.startContainer.classList.remove('hidden');
+      this.settingsPopover.classList.add('hidden');
+    });
+
+    // 4. Bật/Tắt đường ray CatmullRom debug
+    this.toggleTrajectory.addEventListener('change', (e) => {
+      this.showTrajectory = (e.target as HTMLInputElement).checked;
+      this.graphicsEngine.setTrajectoryVisible(this.showTrajectory);
+    });
+
+    // 5. Nút Tiếp tục / Chơi lại ở Winner Banner
+    this.btnCloseWinner.addEventListener('click', () => {
+      this.winnerBanner.classList.add('hidden');
+      this.cameraDirector.resetToOverview(false);
+      this.startContainer.classList.remove('hidden');
     });
   }
 
   private initGameEvents(): void {
-    // Cập nhật thanh tiến trình bay
-    globalEventBus.on('CAMERA_PROGRESS', ({ progress }) => {
-      this.progressBar.style.width = `${(progress * 100).toFixed(1)}%`;
-      this.systemStatusEl.textContent = `Camera lướt đảo: ${(progress * 100).toFixed(0)}%`;
-    });
-
-    // Khi camera đáp xuống trước rương
     globalEventBus.on('CHEST_ARRIVED', ({ chestId, studentName }) => {
-      this.systemStatusEl.textContent = `Đã đáp tại rương #${chestId}`;
       this.winnerNameEl.textContent = studentName;
       this.winnerChestIdEl.textContent = `Rương May Mắn #${chestId}`;
-      this.winnerBanner.classList.add('visible');
-    });
-
-    // Khi nắp rương bật mở
-    globalEventBus.on('CHEST_OPENED', ({ chestId, studentName }) => {
-      this.systemStatusEl.textContent = `🎉 CHÚC MỪNG: ${studentName}!`;
-      this.setButtonsDisabled(false);
+      this.winnerBanner.classList.remove('hidden');
     });
   }
 
-  private startSpin(winnerChest: any): void {
-    this.setButtonsDisabled(true);
-    this.winnerBanner.classList.remove('visible');
+  private startFlight(winnerChest: ChestData): void {
+    this.winnerBanner.classList.add('hidden');
 
-    // 1. Bắn sự kiện GAME_START
-    const students: Student[] = this.chestManager.getAllChests().map((c) => c.student);
+    const students: Student[] = this.allChests.map((c) => c.student);
     globalEventBus.emit('GAME_START', { students });
 
-    // 2. Tạo đường line CatmullRom hiển thị trong Greybox scene để kiểm tra
-    const curve = this.cameraDirector.buildCinematicPath(winnerChest, this.chestManager.getAllChests());
+    const curve = this.cameraDirector.buildCinematicPath(winnerChest, this.allChests);
     const lineMesh = this.cameraDirector.createTrajectoryLineMesh(curve);
+    lineMesh.visible = this.showTrajectory;
     this.graphicsEngine.setTrajectoryLine(lineMesh);
 
-    // 3. Thực hiện chuyến bay điện ảnh
-    this.cameraDirector.flyToChest(winnerChest, this.chestManager.getAllChests());
-  }
-
-  private setButtonsDisabled(disabled: boolean): void {
-    this.btnSpinRandom.disabled = disabled;
-    this.btnSpinTarget.disabled = disabled;
+    this.cameraDirector.flyToChest(winnerChest, this.allChests);
   }
 
   private onResize(): void {
@@ -187,7 +213,9 @@ class GameApp {
   };
 }
 
-// Khởi chạy game khi DOM đã sẵn sàng
-window.addEventListener('DOMContentLoaded', () => {
+// Khởi tạo app an toàn bất kể trạng thái DOM
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', () => new GameApp());
+} else {
   new GameApp();
-});
+}

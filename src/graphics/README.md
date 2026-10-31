@@ -24,3 +24,4 @@ Chào Codex! Module `/src/graphics` là khu vực độc quyền của bạn.
   this.graphicsEngine = new IslandGraphicsEngine(); // thay cho new GreyboxScene();
   ```
   toàn bộ gameplay và camera vẫn hoạt động hoàn hảo mà không cần viết lại.
+

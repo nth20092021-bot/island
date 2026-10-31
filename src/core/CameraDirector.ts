@@ -9,8 +9,8 @@ export interface CameraDirectorConfig {
 }
 
 export const DEFAULT_CAMERA_CONFIG: CameraDirectorConfig = {
-  overviewPosition: new THREE.Vector3(45, 42, 60),
-  overviewLookAt: new THREE.Vector3(0, 6, 0),
+  overviewPosition: new THREE.Vector3(0, 35, 65),
+  overviewLookAt: new THREE.Vector3(0, 5, 0),
   flightDuration: 6.5
 };
 
@@ -249,3 +249,4 @@ export class CameraDirector {
     return this.isFlying;
   }
 }
+
