@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ChestManager } from './core/ChestManager';
 import { CameraDirector } from './core/CameraDirector';
-import { GreyboxScene } from './core/GreyboxScene';
+import { IslandGraphicsEngine } from './graphics/IslandGraphicsEngine';
 import { globalEventBus, Student, ChestData } from './core/EventBus';
 
 class GameApp {
@@ -12,7 +12,7 @@ class GameApp {
 
   private chestManager!: ChestManager;
   private cameraDirector!: CameraDirector;
-  private graphicsEngine!: GreyboxScene;
+  private graphicsEngine!: IslandGraphicsEngine;
   private allChests: ChestData[] = [];
   private showTrajectory: boolean = true;
 
@@ -97,8 +97,8 @@ class GameApp {
     // 2. Đạo diễn Camera
     this.cameraDirector = new CameraDirector(this.camera);
 
-    // 3. Khởi tạo Đồ họa Greybox
-    this.graphicsEngine = new GreyboxScene();
+    // 3. Khởi tạo Đồ họa Đảo Low-Poly do Codex xây dựng
+    this.graphicsEngine = new IslandGraphicsEngine();
     this.graphicsEngine.init(this.scene, this.camera, this.renderer, this.allChests);
 
     // 4. Nạp dữ liệu 28 học sinh vào Popover cài đặt
