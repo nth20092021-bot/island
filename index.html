@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Treasure Island - Hòn Đảo Kho Báu Low-Poly</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div id="ui-hud">
+    <!-- Header -->
+    <header>
+      <div class="logo-group">
+        <h1>🏝️ 3D Treasure Island</h1>
+        <p>Kiến trúc: Core (Antigravity) & Graphics (Codex) | 28 Rương Kho Báu</p>
+      </div>
+      <div class="status-badge">
+        <span class="pulse-dot"></span>
+        <span id="system-status">Sẵn sàng (Chế độ Greybox)</span>
+      </div>
+    </header>
+
+    <!-- Winner Announcement Banner -->
+    <div id="winner-banner">
+      <h2>🏆 RƯƠNG CHIẾN THẮNG ĐÃ MỞ! 🏆</h2>
+      <div id="winner-name">Tên Học Sinh</div>
+      <div id="winner-chest-id">Rương #00</div>
+    </div>
+
+    <!-- Controls Footer -->
+    <footer>
+      <div class="progress-container">
+        <div id="progress-bar"></div>
+      </div>
+      <div class="controls-row">
+        <button id="btn-spin-random" class="btn btn-primary">
+          <span>🎲</span> Quay ngẫu nhiên
+        </button>
+
+        <select id="select-chest">
+          <option value="">-- Chọn rương chỉ định (1 - 28) --</option>
+        </select>
+
+        <button id="btn-spin-target" class="btn btn-secondary">
+          <span>🎯</span> Bay tới rương đã chọn
+        </button>
+
+        <button id="btn-reset-cam" class="btn btn-secondary">
+          <span>🔄</span> Reset Camera
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
