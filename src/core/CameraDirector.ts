@@ -105,13 +105,13 @@ export class CameraDirector {
     ).normalize();
     const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
 
-    // Điểm đáp cuối cùng: Góc nhìn 3/4 điện ảnh (chếch 32 độ nhìn xuống)
-    // Cự ly chuẩn xác 3.4m phía trước và 1.6m bên hông giúp rương chiếm trọn trung tâm khung hình
+    // Điểm đáp cuối cùng: Góc nhìn 3/4 điện ảnh (chếch xuống rương)
+    // Giữ khoảng cách đủ xa để khi áp sát, một thay đổi vị trí nhỏ không làm góc quay đổi quá nhanh.
     const finalCameraPos = targetChest.position
       .clone()
-      .add(forward.clone().multiplyScalar(3.4))
-      .add(right.clone().multiplyScalar(1.6))
-      .add(new THREE.Vector3(0, 2.2, 0));
+      .add(forward.clone().multiplyScalar(4.6))
+      .add(right.clone().multiplyScalar(2.1))
+      .add(new THREE.Vector3(0, 2.7, 0));
 
     // Điểm neo 1: Lướt sà xuống từ tầng mây (30% chặng đường)
     const directVec = finalCameraPos.clone().sub(startPos);
@@ -208,6 +208,9 @@ export class CameraDirector {
     // Tỉ lệ thời gian: 48% vòng quay 360 độ, 52% sà xuống rương
     const orbitThreshold = 0.48;
 
+    // Vị trí & hướng nhìn của cả hai giai đoạn đều là hàm THUẦN CỦA TIẾN TRÌNH.
+    // Trừ khi còn dùng bộ lọc đệ quy (lerp mỗi khung hình) thì góc quay mới phụ thuộc fps
+    // và bị trễ rồi "giật snap" đúng lúc camera áp sát rương.
     this.currentTween = gsap.to(flightState, {
       progress: 1,
       duration: this.config.flightDuration,
@@ -223,14 +226,17 @@ export class CameraDirector {
           // Hàm easing nhẹ nhàng cho vòng quay 360
           const easedOrbit = gsap.parseEase('power1.inOut')(orbitProgress);
 
+          // Sóng sin bằng 0 ở cả hai đầu vòng quay: khung hình cuối pha 1 khớp
+          // chính xác điểm khởi đầu của đường bay sà xuống, không còn cú nảy vị trí.
+          const wave = Math.sin(easedOrbit * Math.PI * 2);
           const angle = startAngle + easedOrbit * Math.PI * 2;
-          const r = orbitRadius + Math.sin(easedOrbit * Math.PI * 2) * 4.0;
-          const y = orbitAltitude + Math.cos(easedOrbit * Math.PI * 2) * 3.5;
+          const r = orbitRadius + wave * 4.0;
+          const y = orbitAltitude + wave * 3.5;
 
           this.camera.position.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
 
           // Điểm nhìn hướng vào trung tâm đảo hùng vĩ
-          this.currentLookAt.lerp(islandCenter, 0.08);
+          this.currentLookAt.copy(islandCenter);
           this.camera.lookAt(this.currentLookAt);
 
         } else {
@@ -243,14 +249,12 @@ export class CameraDirector {
           const pos = approachCurve.getPointAt(easedDescent);
           this.camera.position.copy(pos);
 
-          // Hướng nhìn phía trước dọc theo tiếp tuyến đường bay
-          const tangent = approachCurve.getTangentAt(Math.min(0.999, easedDescent)).normalize();
-          const aheadLook = pos.clone().add(tangent.multiplyScalar(14));
-
-          // Chuyển mượt mà từ nhìn đường bay sang nhìn ổ khóa rương
-          const blendFactor = THREE.MathUtils.smoothstep(easedDescent, 0.22, 0.88);
-          const desiredLook = aheadLook.clone().lerp(finalLookTarget, blendFactor);
-          this.currentLookAt.lerp(desiredLook, 0.12);
+          // Hướng nhìn: trượt từ tâm đảo sang thân rương bằng hai đường smoothstep lồng nhau
+          const lookAhead = approachCurve.getPointAt(Math.min(1, easedDescent + 0.045));
+          const grip = THREE.MathUtils.smoothstep(easedDescent, 0.1, 0.62);
+          const desiredLook = lookAhead.lerp(finalLookTarget, grip);
+          const lockOn = THREE.MathUtils.smoothstep(easedDescent, 0, 0.3);
+          this.currentLookAt.copy(islandCenter).lerp(desiredLook, lockOn);
           this.camera.lookAt(this.currentLookAt);
 
         }
@@ -260,6 +264,7 @@ export class CameraDirector {
       },
       onComplete: () => {
         this.isFlying = false;
+        this.currentLookAt.copy(finalLookTarget);
         this.camera.lookAt(finalLookTarget);
 
         globalEventBus.emit('CHEST_ARRIVED', {

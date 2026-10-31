@@ -51,11 +51,15 @@
   <div id="golden-flash" class="golden-flash"></div>
 
   <!-- Popup Vinh danh người chiến thắng -->
-  <div id="winner-banner" class="hidden">
-    <div class="winner-trophy">🏆</div>
+  <div id="winner-banner" class="winner-banner hidden" role="status" aria-live="polite">
+    <div class="winner-eyebrow">Vinh danh</div>
     <div id="winner-name">Tên Học Sinh</div>
-    <div id="winner-chest-id">Rương May Mắn #00</div>
-    <button id="btn-close-winner" class="btn btn-primary" style="margin-top: 10px;">Chơi lại</button>
+    <div class="winner-meta">
+      <span id="winner-chest-id" class="winner-badge">Rương #00</span>
+      <span class="winner-sep"></span>
+      <span class="winner-sub">Hòn đảo kho báu</span>
+    </div>
+    <button id="btn-close-winner" class="winner-btn">Chơi lại</button>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

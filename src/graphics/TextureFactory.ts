@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type TextureMode = 'sand' | 'rock' | 'wood' | 'metal' | 'grass';
+export type TextureMode = 'sand' | 'rock' | 'wood' | 'chestWood' | 'metal' | 'grass';
 
 function hash(x: number, y: number, seed: number): number {
   let n = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(seed, 1442695041);
@@ -28,6 +28,18 @@ function surface(mode: TextureMode, x: number, y: number, size: number): { color
     const lines = Math.sin(v * Math.PI * 48 + broad * 4 + Math.sin(u * Math.PI * 8) * 0.6);
     const t = broad * 0.22 + detail * 0.17 + lines * 0.12;
     return { color: [87 + t * 100, 46 + t * 65, 24 + t * 38], height: t + lines * 0.12, roughness: 0.65 + detail * 0.16 };
+  }
+  if (mode === 'chestWood') {
+    // Gỗ sồi làm rương: 3 ván ghép với rãnh tối, vân gỗ chạy dọc theo chiều cao ván.
+    const seam = Math.pow(Math.abs(Math.sin(v * Math.PI * 3.0)), 26);
+    const grain = noise(u * 8, v * 64, 8, 21) * 0.62 + detail * 0.28;
+    const t = broad * 0.18 + grain * 0.5;
+    const shade = 1 - seam * 0.78;
+    return {
+      color: [(168 + t * 76) * shade, (112 + t * 60) * shade, (52 + t * 36) * shade],
+      height: t * 0.55 - seam * 1.1,
+      roughness: 0.5 + t * 0.24 + seam * 0.3
+    };
   }
   if (mode === 'rock') {
     const veins = Math.abs(Math.sin((u + v * 0.65) * Math.PI * 18 + broad * 7));
@@ -142,6 +154,62 @@ export function rockMaterial(store: Array<THREE.Material | THREE.Texture>): THRE
   });
   store.push(m, p.map, p.roughnessMap, p.normalMap);
   return m;
+}
+
+/**
+ * Sprites bụi nước: PointsMaterial không có map sẽ vẽ ô vuông trắng,
+ * nên cần một vệt tròn mờ để hơi nước tan vào không khí.
+ */
+export function mistSprite(store: Array<THREE.Material | THREE.Texture>): THREE.CanvasTexture {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, 'rgba(255,255,255,0.85)');
+  grad.addColorStop(0.4, 'rgba(255,255,255,0.32)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  store.push(tex);
+  return tex;
+}
+
+/**
+ * Môi trường phản chiếu rẻ tiền: ảnh equirect 128x64 mô phỏng bầu trời, chân trời
+ * và thảm cỏ. Kim loại có metalness cao KHÔNG còn đường nào phản chiếu thì sẽ bị
+ * render ra màu đen, nên đồng thau và vàng của rương cần bản đồ này.
+ */
+export function skyEnvironment(): THREE.CanvasTexture {
+  const width = 128;
+  const height = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  const sky = ctx.createLinearGradient(0, 0, 0, height);
+  sky.addColorStop(0, '#1f5fbf');
+  sky.addColorStop(0.42, '#9cc4e8');
+  sky.addColorStop(0.5, '#e9f2f6');
+  sky.addColorStop(0.58, '#8fae74');
+  sky.addColorStop(1, '#3d5738');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, width, height);
+
+  // Vệt nắng rực để kim loại có một điểm sáng phản chiếu rõ ràng
+  const sun = ctx.createRadialGradient(width * 0.27, height * 0.28, 0, width * 0.27, height * 0.28, width * 0.17);
+  sun.addColorStop(0, 'rgba(255,252,238,1)');
+  sun.addColorStop(1, 'rgba(255,244,214,0)');
+  ctx.fillStyle = sun;
+  ctx.fillRect(0, 0, width, height);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }
 
 export function chestPbrMaterials(): {
