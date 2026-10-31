@@ -166,13 +166,13 @@ class GameApp {
       }
     });
 
-    // 3. Reset Camera: Trở về góc nhìn tổng quan & chuyển lại Trời Sáng
+    // 3. Reset Camera: Trở về góc nhìn tổng quan & reset lại rương
     this.btnResetCam.addEventListener('click', () => {
       this.cameraDirector.resetToOverview(false);
       this.winnerBanner.classList.add('hidden');
       this.startContainer.classList.remove('hidden');
       this.settingsPopover.classList.add('hidden');
-      this.graphicsEngine.transitionToDay(2.0);
+      this.graphicsEngine.resetAll();
     });
 
     // 4. Nút Tiếp tục / Chơi lại ở Winner Banner
@@ -180,35 +180,35 @@ class GameApp {
       this.winnerBanner.classList.add('hidden');
       this.cameraDirector.resetToOverview(false);
       this.startContainer.classList.remove('hidden');
-      this.graphicsEngine.transitionToDay(2.0);
+      this.graphicsEngine.resetAll();
     });
   }
 
   private initGameEvents(): void {
     globalEventBus.on('CHEST_ARRIVED', ({ chestId, studentName }) => {
-      // Lưu sẵn thông tin người thắng, đợi ánh sáng vàng bùng nổ rồi mới hiển thị
+      // Lưu sẵn thông tin người thắng, đợi ánh sáng bùng nổ rồi mới hiển thị
       this.winnerNameEl.textContent = studentName;
       this.winnerChestIdEl.textContent = `Rương May Mắn #${chestId}`;
     });
 
-    // Khi mở rương: Ánh sáng vàng bùng sáng lóa toàn màn hình rồi hé lộ tên học sinh
+    // Khi mở rương: Sáng lên khắp màn hình trong khoảng 1s rồi mờ dần đưa ra tên học sinh trong rương
     globalEventBus.on('CHEST_OPENED', () => {
-      // 1. Bùng nổ ánh sáng vàng rực sáng toàn màn hình
+      // 1. Sáng bừng lên khắp màn hình
       gsap.to(this.goldenFlash, {
-        opacity: 0.98,
-        duration: 0.22,
+        opacity: 1,
+        duration: 0.2,
         ease: 'power2.in',
         onComplete: () => {
-          // 2. Giữ ánh sáng vàng chói lọi trong 0.45s
-          gsap.delayedCall(0.45, () => {
-            // 3. Dịu dần ánh sáng vàng hé lộ rương kho báu vàng
+          // 2. Giữ ánh sáng rực rỡ khắp màn hình trong khoảng 1s
+          gsap.delayedCall(0.9, () => {
+            // 3. Mờ dần ánh sáng rực rỡ
             gsap.to(this.goldenFlash, {
               opacity: 0,
-              duration: 0.95,
+              duration: 0.9,
               ease: 'power2.out'
             });
 
-            // 4. Bảng tên học sinh vinh danh xuất hiện trang trọng
+            // 4. Đưa ra tên học sinh trong rương trang trọng
             this.winnerBanner.classList.remove('hidden');
           });
         }

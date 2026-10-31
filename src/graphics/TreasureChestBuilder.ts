@@ -412,11 +412,6 @@ export class TreasureChestBuilder {
     particles.visible = false;
     root.add(particles);
 
-    // Bảng tên học sinh bay lơ lửng phía trên rương
-    const label = this.createLabel(chest.student.name);
-    label.position.set(0, H + R + 0.55, 0);
-    root.add(label);
-
     // Đèn ánh sáng vàng ấm áp trong đêm khi được chọn
     const light = new THREE.PointLight(0xfbbf24, 0, 16, 1.4);
     light.position.set(0, 0.85, 0);
@@ -430,36 +425,6 @@ export class TreasureChestBuilder {
   private remember<T extends THREE.BufferGeometry>(g: T): T {
     this.geometries.push(g);
     return g;
-  }
-
-  private createLabel(name: string): THREE.Sprite {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d')!;
-
-    ctx.fillStyle = 'rgba(20, 24, 33, 0.92)';
-    ctx.beginPath();
-    ctx.roundRect(4, 4, 248, 56, 12);
-    ctx.fill();
-
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    ctx.fillStyle = '#fef3c7';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(name, 128, 32);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-    this.materials.push(spriteMat);
-
-    const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(2.4, 0.6, 1);
-    return sprite;
   }
 
   /**

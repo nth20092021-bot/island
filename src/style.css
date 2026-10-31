@@ -275,7 +275,7 @@ select {
 }
 
 
-/* Golden Flash: Bùng nổ ánh sáng vàng sáng lóa toàn màn hình khi mở rương */
+/* Golden Flash: Bùng nổ ánh sáng vàng sáng lóa toàn màn hình trong khoảng 1s khi mở rương */
 .golden-flash {
   position: fixed;
   top: 0;
@@ -283,8 +283,8 @@ select {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 80;
-  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fef08a 22%, #f59e0b 58%, #b45309 88%, #78350f 100%);
+  z-index: 90;
+  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fffbeb 25%, #fde047 55%, #f59e0b 80%, rgba(217, 119, 6, 0.9) 100%);
   opacity: 0;
   mix-blend-mode: screen;
 }
