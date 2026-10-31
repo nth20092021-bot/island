@@ -57,6 +57,16 @@ class GameApp {
     this.winnerChestIdEl = document.getElementById('winner-chest-id') as HTMLElement;
     this.btnCloseWinner = document.getElementById('btn-close-winner') as HTMLButtonElement;
     this.goldenFlash = document.getElementById('golden-flash') as HTMLElement;
+
+    this.resetWinnerBanner();
+  }
+
+  private resetWinnerBanner(): void {
+    this.winnerBanner.classList.add('hidden');
+    this.winnerNameEl.textContent = '';
+    this.winnerChestIdEl.textContent = '';
+    gsap.killTweensOf(this.goldenFlash);
+    this.goldenFlash.style.opacity = '0';
   }
 
   private initThree(): void {
@@ -169,7 +179,7 @@ class GameApp {
     // 3. Reset Camera: Trở về góc nhìn tổng quan & reset lại rương
     this.btnResetCam.addEventListener('click', () => {
       this.cameraDirector.resetToOverview(false);
-      this.winnerBanner.classList.add('hidden');
+      this.resetWinnerBanner();
       this.startContainer.classList.remove('hidden');
       this.settingsPopover.classList.add('hidden');
       this.graphicsEngine.resetAll();
@@ -177,7 +187,7 @@ class GameApp {
 
     // 4. Nút Tiếp tục / Chơi lại ở Winner Banner
     this.btnCloseWinner.addEventListener('click', () => {
-      this.winnerBanner.classList.add('hidden');
+      this.resetWinnerBanner();
       this.cameraDirector.resetToOverview(false);
       this.startContainer.classList.remove('hidden');
       this.graphicsEngine.resetAll();
@@ -217,7 +227,7 @@ class GameApp {
   }
 
   private startFlight(winnerChest: ChestData): void {
-    this.winnerBanner.classList.add('hidden');
+    this.resetWinnerBanner();
 
     const students: Student[] = this.allChests.map((c) => c.student);
     globalEventBus.emit('GAME_START', { students });

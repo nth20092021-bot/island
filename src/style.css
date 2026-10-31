@@ -243,7 +243,8 @@ select {
   z-index: 50;
   transform: translateX(-50%) translateY(0);
   opacity: 1;
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  visibility: visible;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s ease;
 }
 
 /* Viền accent vàng mảnh phía trên thay cho khung viền vàng dày */
@@ -258,10 +259,12 @@ select {
   background: linear-gradient(90deg, rgba(245, 158, 11, 0) 0%, #f59e0b 30%, #fef08a 50%, #f59e0b 70%, rgba(245, 158, 11, 0) 100%);
 }
 
+#winner-banner.hidden,
 .winner-banner.hidden {
-  opacity: 0;
-  transform: translateX(-50%) translateY(-22px) scale(0.96);
-  pointer-events: none;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateX(-50%) translateY(-22px) scale(0.96) !important;
 }
 
 .winner-eyebrow {
@@ -274,7 +277,7 @@ select {
 }
 
 #winner-name {
-  font-size: 3.2rem;
+  font-size: clamp(1.8rem, 5.5vw, 3.2rem);
   line-height: 1.15;
   font-weight: 800;
   letter-spacing: -0.015em;
