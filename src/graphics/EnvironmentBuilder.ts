@@ -3,6 +3,8 @@ import { grassMaterial, rockMaterial, sandMaterial } from './TextureFactory';
 import { foliageVertexShader, foliageFragmentShader } from './Shaders/FoliageShader';
 import { waterFragmentShader, waterVertexShader } from './Shaders/WaterShader';
 import { streamFragmentShader, streamVertexShader } from './Shaders/LavaShader';
+import { ISLAND_SCALE, ISLAND_HEIGHT_SCALE, RIVER_PATH, riverDistance } from '../core/IslandLayout';
+import { ChestData } from '../core/EventBus';
 
 export interface EnvironmentBuilderOptions {
   seed?: number;
@@ -15,7 +17,7 @@ export interface EnvironmentBuilderOptions {
 
 /**
  * EnvironmentBuilder: Dựng hòn đảo nhiệt đới hùng vĩ quy mô lớn (Majestic Tropical Paradise Island)
- * - Bản đồ rộng lớn (bán kính đảo ~70m, biển 260m)
+ * - Đảo rộng ~110 đơn vị thế giới; địa hình và cảnh vật dùng chung hệ số mở rộng
  * - Địa hình đồi núi trập trùng, cao nguyên xanh, thung lũng sâu
  * - Thác nước đôi hùng vĩ (Grand Cascading Waterfalls) đổ từ vách đá cao xuống hồ nước ngọt
  * - Con suối trong lành uốn lượn (Meandering River & Stream) với đá cuội và bọt nước
@@ -29,8 +31,10 @@ export class EnvironmentBuilder {
   private readonly geometries: THREE.BufferGeometry[] = [];
   private readonly materials: Array<THREE.Material | THREE.Texture> = [];
   private readonly foliageMaterials: THREE.ShaderMaterial[] = [];
+  private chestClearings: THREE.Vector2[] = [];
   private root = new THREE.Group();
   private clouds: THREE.Object3D | null = null;
+  private spray: THREE.Points | null = null;
   private random: () => number;
 
   public constructor(options: EnvironmentBuilderOptions = {}) {
@@ -49,9 +53,32 @@ export class EnvironmentBuilder {
     };
   }
 
+  public setChestClearings(chests: ChestData[]): void {
+    this.chestClearings = chests.map((chest) => new THREE.Vector2(
+      chest.position.x / ISLAND_SCALE, chest.position.z / ISLAND_SCALE
+    ));
+  }
+
+  private clearOfChests(x: number, z: number, radius: number): boolean {
+    return this.chestClearings.every((pos) => Math.hypot(x - pos.x, z - pos.y) > radius);
+  }
+
+  private randomClearing(minRadius: number, maxRadius: number, clearance: number): THREE.Vector2 {
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const angle = this.random() * Math.PI * 2;
+      const radius = minRadius + this.random() * (maxRadius - minRadius);
+      const x = Math.cos(angle) * radius, z = Math.sin(angle) * radius;
+      if (this.clearOfChests(x, z, clearance) && riverDistance(x, z) > 5) {
+        return new THREE.Vector2(x, z);
+      }
+    }
+    throw new Error('Unable to place decoration safely on the island');
+  }
+
   public build(): THREE.Group {
     this.root = new THREE.Group();
     this.root.name = 'MajesticTropicalIsland';
+    this.root.scale.set(ISLAND_SCALE, ISLAND_HEIGHT_SCALE, ISLAND_SCALE);
 
     // 1. Biển ngọc lam bao la & Vách đá ngầm hùng vĩ
     this.root.add(this.createOcean());
@@ -75,6 +102,7 @@ export class EnvironmentBuilder {
 
     // 5. Tảng đá phủ rêu & Mây trời bồng bềnh
     this.root.add(this.createMossyBoulders());
+    this.root.add(this.createCoastalMonuments());
     this.clouds = this.createClouds();
     this.root.add(this.clouds);
 
@@ -82,10 +110,9 @@ export class EnvironmentBuilder {
   }
 
   private noise(x: number, z: number): number {
-    const a = Math.sin(x * 0.11 + this.opts.seed) * 43758.5453;
-    const b = Math.sin(z * 0.14 - this.opts.seed * 0.7) * 24634.6345;
-    const c = Math.sin((x + z) * 0.05) * 0.7;
-    return ((a - Math.floor(a)) * 0.58 + (b - Math.floor(b)) * 0.42) * 2 - 1 + c;
+    // Continuous detail prevents sharp height jumps and water clipping through the terrain.
+    return Math.sin(x * 0.23 + this.opts.seed) * Math.cos(z * 0.19) * 0.55
+      + Math.sin(x * 0.48 + z * 0.34) * 0.23;
   }
 
   /**
@@ -93,8 +120,12 @@ export class EnvironmentBuilder {
    * Bán kính đảo mở rộng ~68m, đỉnh núi cao ~22m với thung lũng suối tự nhiên
    */
   public getTerrainHeightAt(x: number, z: number): number {
+    return this.localTerrainHeightAt(x / ISLAND_SCALE, z / ISLAND_SCALE) * ISLAND_HEIGHT_SCALE;
+  }
+
+  private localTerrainHeightAt(x: number, z: number): number {
     const r = Math.sqrt(x * x + z * z);
-    if (r > 74) return -2.5;
+    if (r >= 74) return -2.8;
 
     // Tỉ lệ khoảng cách từ tâm đến bờ biển (r=66m)
     const normR = THREE.MathUtils.clamp(r / 66.0, 0, 1);
@@ -107,11 +138,16 @@ export class EnvironmentBuilder {
     const mountainRidges = Math.sin(x * 0.07) * Math.cos(z * 0.07) * 2.6;
 
     // Thung lũng lòng suối uốn lượn tự nhiên
-    const riverValley = -Math.exp(-Math.pow((x - z * 0.45 - 14) / 7.0, 2)) * 2.4;
+    const riverValley = -Math.exp(-Math.pow(riverDistance(x, z) / 4.2, 2)) * 2.8;
+    const poolDistance = Math.hypot(x + 18, z - 18);
+    const pool = -Math.exp(-Math.pow(poolDistance / 6.8, 4)) * 2.3;
 
     const detail = this.noise(x, z) * (r < 18 ? 0.4 : 0.85);
 
-    return THREE.MathUtils.clamp(base + mountainRidges + riverValley + detail, 0.5, 25.5);
+    const height = THREE.MathUtils.clamp(base + mountainRidges + riverValley + pool + detail, 0.5, 25.5);
+    // Lower the beach smoothly beneath the sea, rather than cutting a rectangular rim.
+    const shore = THREE.MathUtils.smoothstep(r, 68, 74);
+    return THREE.MathUtils.lerp(height, -2.8, shore);
   }
 
   public getTerrainNormalAt(x: number, z: number): THREE.Vector3 {
@@ -136,12 +172,12 @@ export class EnvironmentBuilder {
    * 1. Biển ngọc lam nhiệt đới bao la (bán kính mở rộng 260m)
    */
   private createOcean(): THREE.Mesh {
-    const g = this.geo(new THREE.CircleGeometry(260, 128));
+    const g = this.geo(new THREE.CircleGeometry(320, 128));
     g.rotateX(-Math.PI / 2);
     const m = new THREE.ShaderMaterial({
       vertexShader: waterVertexShader,
       fragmentShader: waterFragmentShader,
-      uniforms: { uTime: { value: 0 } },
+      uniforms: { uTime: { value: 0 }, uDayNight: { value: 0 } },
       transparent: true,
       side: THREE.DoubleSide
     });
@@ -178,7 +214,7 @@ export class EnvironmentBuilder {
    */
   private createTerrainSurface(): THREE.Mesh {
     const size = 160;
-    const segments = 96;
+    const segments = 160;
     const g = this.geo(new THREE.PlaneGeometry(size, size, segments, segments));
     g.rotateX(-Math.PI / 2);
 
@@ -196,7 +232,7 @@ export class EnvironmentBuilder {
       const x = p.getX(i);
       const z = p.getZ(i);
       const r = Math.sqrt(x * x + z * z);
-      const h = r > 72.0 ? -2.8 : this.getTerrainHeightAt(x, z);
+      const h = this.localTerrainHeightAt(x, z);
       p.setY(i, h);
 
       let c = lushGrass;
@@ -243,7 +279,7 @@ export class EnvironmentBuilder {
     const stoneMat = this.mat(0x9ca3af, 0.88);
     const ancientGold = this.mat(0xfbbf24, 0.25, 0.75);
 
-    const summitY = this.getTerrainHeightAt(0, 0);
+    const summitY = this.localTerrainHeightAt(0, 0);
 
     // Bể đá cổ tầng 1 (Tầng lớn bên ngoài)
     const bathTier1 = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(11.5, 12.8, 1.1, 32)), stoneMat);
@@ -263,12 +299,14 @@ export class EnvironmentBuilder {
       new THREE.ShaderMaterial({
         vertexShader: waterVertexShader,
         fragmentShader: waterFragmentShader,
-        uniforms: { uTime: { value: 0 } },
+        uniforms: { uTime: { value: 0 }, uDayNight: { value: 0 } },
         transparent: true
       })
     );
     bathWater.rotation.x = -Math.PI / 2;
-    bathWater.position.set(0, summitY + 2.15, 0);
+    // Keep the surface above the upper stone disc (top = summitY + 2.2).
+    bathWater.position.set(0, summitY + 2.31, 0);
+    this.materials.push(bathWater.material as THREE.Material);
     group.add(bathWater);
 
     // 6 Cột đá cổ kính uy nghiêm bao quanh bể đá cổ
@@ -320,28 +358,51 @@ export class EnvironmentBuilder {
       fragmentShader: streamFragmentShader,
       uniforms: { uTime: { value: 0 } },
       transparent: true,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
     this.materials.push(waterfallMat);
 
-    // Thác nước chính (Thác Tây Bắc) đổ từ vách núi cao 20m xuống chân thung lũng
-    const fall1 = new THREE.Mesh(this.geo(new THREE.PlaneGeometry(6.5, 22, 10, 24)), waterfallMat);
-    fall1.position.set(-18, 9.5, 16);
-    fall1.rotation.y = 0.35;
-    group.add(fall1);
+    const stone = rockMaterial(this.materials);
+    // Twin falls share the same rocky bowl and feed the stream at its source.
+    for (const [x, width, height] of [[-21, 4.5, 9], [-15, 3.6, 7.5]]) {
+      const ground = this.localTerrainHeightAt(x, 18);
+      const backdrop = new THREE.Mesh(this.geo(new THREE.DodecahedronGeometry(1.0, 1)), stone);
+      backdrop.scale.set(width * 0.85, height * 0.72, 2.8);
+      backdrop.position.set(x, ground + height * 0.5, 13.1);
+      backdrop.castShadow = true;
+      group.add(backdrop);
+      const fall = new THREE.Mesh(this.geo(new THREE.PlaneGeometry(width, height, 8, 24)), waterfallMat);
+      fall.position.set(x, ground + height * 0.5 + 0.25, 16.2);
+      group.add(fall);
+      const crest = new THREE.Mesh(this.geo(new THREE.BoxGeometry(width + 1.2, 0.65, 2.2)), stone);
+      crest.position.set(x, ground + height + 0.45, 14.9);
+      group.add(crest);
+    }
 
-    // Thác nước phụ (Thác Đông Nam) đổ từ sống đá ra biển
-    const fall2 = new THREE.Mesh(this.geo(new THREE.PlaneGeometry(5.2, 16, 8, 20)), waterfallMat);
-    fall2.position.set(28, 6.2, -12);
-    fall2.rotation.y = -0.42;
-    group.add(fall2);
-
-    // Hồ nước chân thác (Plunge Pool)
-    const poolGeo = this.geo(new THREE.CircleGeometry(8.5, 24));
+    const poolGeo = this.geo(new THREE.CircleGeometry(7.0, 48));
     poolGeo.rotateX(-Math.PI / 2);
+    const positions = poolGeo.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < positions.count; i++) {
+      const x = positions.getX(i) - 18, z = positions.getZ(i) + 18;
+      positions.setY(i, this.localTerrainHeightAt(x, z) + 0.3);
+    }
+    poolGeo.computeVertexNormals();
     const poolMesh = new THREE.Mesh(poolGeo, waterfallMat);
-    poolMesh.position.set(-18, 1.8, 18);
+    poolMesh.position.set(-18, 0, 18);
     group.add(poolMesh);
+
+    // Light mist is one points draw call, animated above the plunge pool.
+    const sprayGeometry = this.geo(new THREE.BufferGeometry());
+    sprayGeometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(90 * 3), 3));
+    const sprayMaterial = new THREE.PointsMaterial({
+      color: 0xe9fffa, size: 0.45, transparent: true, opacity: 0.65,
+      depthWrite: false, sizeAttenuation: true
+    });
+    this.materials.push(sprayMaterial);
+    this.spray = new THREE.Points(sprayGeometry, sprayMaterial);
+    this.spray.frustumCulled = false;
+    group.add(this.spray);
 
     return group;
   }
@@ -358,26 +419,40 @@ export class EnvironmentBuilder {
       fragmentShader: streamFragmentShader,
       uniforms: { uTime: { value: 0 } },
       transparent: true,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
     this.materials.push(riverMat);
 
-    // Tạo dòng suối uốn khúc nhiều đoạn nối từ hồ chân thác ra biển
-    const riverSegments = [
-      { pos: new THREE.Vector3(-14, 2.6, 22), rotY: 0.4, w: 4.5, l: 18 },
-      { pos: new THREE.Vector3(-2, 2.8, 30), rotY: 0.85, w: 5.2, l: 22 },
-      { pos: new THREE.Vector3(14, 2.4, 38), rotY: 0.55, w: 5.8, l: 20 },
-      { pos: new THREE.Vector3(32, 1.9, 46), rotY: 0.35, w: 6.8, l: 22 }
-    ];
-
-    for (const seg of riverSegments) {
-      const g = this.geo(new THREE.PlaneGeometry(seg.w, seg.l, 6, 16));
-      g.rotateX(-Math.PI / 2);
-      const m = new THREE.Mesh(g, riverMat);
-      m.position.copy(seg.pos);
-      m.rotation.y = seg.rotY;
-      group.add(m);
+    // One continuous bank-following ribbon, not disconnected planes floating above the hills.
+    const curve = new THREE.CatmullRomCurve3(RIVER_PATH.map(([x, z]) => new THREE.Vector3(x, 0, z)));
+    const vertices: number[] = [], uv: number[] = [], indices: number[] = [];
+    const steps = 120;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const point = curve.getPoint(t), tangent = curve.getTangent(t);
+      const normal = new THREE.Vector2(-tangent.z, tangent.x).normalize();
+      const halfWidth = 2.15 + t * 1.3;
+      for (let lane = 0; lane <= 4; lane++) {
+        const side = lane / 2 - 1;
+        const x = point.x + normal.x * side * halfWidth;
+        const z = point.z + normal.y * side * halfWidth;
+        vertices.push(x, this.localTerrainHeightAt(x, z) + 0.32, z);
+        uv.push(lane / 4, t * 7);
+      }
+      if (i < steps) {
+        for (let lane = 0; lane < 4; lane++) {
+          const j = i * 5 + lane;
+          indices.push(j, j + 1, j + 5, j + 1, j + 6, j + 5);
+        }
+      }
     }
+    const geometry = this.geo(new THREE.BufferGeometry());
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    group.add(new THREE.Mesh(geometry, riverMat));
 
     return group;
   }
@@ -390,10 +465,11 @@ export class EnvironmentBuilder {
     group.name = 'TimberBridge';
 
     const wood = this.mat(0x78350f, 0.75);
+    const bridgeY = this.localTerrainHeightAt(-2, 30) + 2.0;
 
     // Mặt cầu gỗ dài 8m, rộng 2.4m bắc qua lòng suối
     const deck = new THREE.Mesh(this.geo(new THREE.BoxGeometry(2.6, 0.32, 9.2)), wood);
-    deck.position.set(-2, 3.8, 30);
+    deck.position.set(-2, bridgeY, 30);
     deck.rotation.y = -0.68;
     deck.castShadow = true;
     group.add(deck);
@@ -401,7 +477,7 @@ export class EnvironmentBuilder {
     // Lan can cầu gỗ hai bên
     for (const sx of [-1.2, 1.2]) {
       const rail = new THREE.Mesh(this.geo(new THREE.BoxGeometry(0.14, 0.85, 9.2)), wood);
-      rail.position.set(-2 + sx * Math.cos(-0.68), 4.3, 30 + sx * Math.sin(-0.68));
+      rail.position.set(-2 + sx * Math.cos(-0.68), bridgeY + 0.5, 30 + sx * Math.sin(-0.68));
       rail.rotation.y = -0.68;
       group.add(rail);
     }
@@ -409,7 +485,7 @@ export class EnvironmentBuilder {
     // Các trụ cầu cắm xuống lòng suối
     for (const z of [-3.5, 3.5]) {
       const post = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(0.24, 0.28, 3.2, 6)), wood);
-      post.position.set(-2, 2.2, 30 + z);
+      post.position.set(-2, bridgeY - 1.2, 30 + z);
       group.add(post);
     }
 
@@ -464,11 +540,10 @@ export class EnvironmentBuilder {
     const tempEuler = new THREE.Euler();
 
     for (let i = 0; i < count; i++) {
-      const a = (i / count) * Math.PI * 2 + (this.random() - 0.5) * 0.35;
-      const r = 48 + this.random() * 16; // Bố trí dọc theo bờ biển rộng
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-      const y = this.getTerrainHeightAt(x, z);
+      const point = this.randomClearing(48, 64, 4.0);
+      const x = point.x, z = point.y;
+      const a = Math.atan2(z, x);
+      const y = this.localTerrainHeightAt(x, z);
 
       const leanAngle = 0.2 + this.random() * 0.18;
       tempEuler.set(Math.sin(a) * leanAngle, a, Math.cos(a) * leanAngle);
@@ -512,11 +587,9 @@ export class EnvironmentBuilder {
     const matrix = new THREE.Matrix4();
 
     for (let i = 0; i < count; i++) {
-      const a = this.random() * Math.PI * 2;
-      const r = 18 + this.random() * 32; // Phân bổ rộng khắp thung lũng và sườn đồi
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-      const y = this.getTerrainHeightAt(x, z);
+      const point = this.randomClearing(18, 50, 4.5);
+      const x = point.x, z = point.y;
+      const y = this.localTerrainHeightAt(x, z);
       const scale = 0.8 + this.random() * 0.65;
 
       matrix.makeTranslation(x, y + 2.1 * scale, z).scale(new THREE.Vector3(scale, scale, scale));
@@ -549,11 +622,9 @@ export class EnvironmentBuilder {
     const matrix = new THREE.Matrix4();
 
     for (let i = 0; i < count; i++) {
-      const a = this.random() * Math.PI * 2;
-      const r = 10 + this.random() * 20; // Sườn đồi cao và sống núi
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-      const y = this.getTerrainHeightAt(x, z);
+      const point = this.randomClearing(10, 30, 3.4);
+      const x = point.x, z = point.y;
+      const y = this.localTerrainHeightAt(x, z);
       const s = 0.7 + this.random() * 0.55;
 
       matrix.makeTranslation(x, y + 1.8 * s, z).scale(new THREE.Vector3(s, s, s));
@@ -586,11 +657,9 @@ export class EnvironmentBuilder {
     const matrix = new THREE.Matrix4();
 
     for (let i = 0; i < count; i++) {
-      const a = this.random() * Math.PI * 2;
-      const r = 12 + this.random() * 45;
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-      const y = this.getTerrainHeightAt(x, z);
+      const point = this.randomClearing(12, 57, 2.8);
+      const x = point.x, z = point.y;
+      const y = this.localTerrainHeightAt(x, z);
       const s = 0.55 + this.random() * 0.7;
 
       matrix.makeTranslation(x, y + 0.5 * s, z).scale(new THREE.Vector3(s * 1.3, s * 0.75, s * 1.3));
@@ -617,11 +686,9 @@ export class EnvironmentBuilder {
     const matrix = new THREE.Matrix4();
 
     for (let i = 0; i < count; i++) {
-      const a = this.random() * Math.PI * 2;
-      const r = 14 + this.random() * 48;
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-      const y = this.getTerrainHeightAt(x, z);
+      const point = this.randomClearing(14, 62, 3.5);
+      const x = point.x, z = point.y;
+      const y = this.localTerrainHeightAt(x, z);
       const s = 0.6 + this.random() * 1.3;
 
       matrix.makeTranslation(x, y + 0.5 * s, z).scale(new THREE.Vector3(s * 1.25, s * 0.8, s * 1.2));
@@ -631,6 +698,47 @@ export class EnvironmentBuilder {
     rocks.castShadow = true;
     rocks.receiveShadow = true;
     return rocks;
+  }
+
+  /** Coastal basalt spires, terraces and a second small stone basin enlarge the silhouette. */
+  private createCoastalMonuments(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'CoastalStoneMonuments';
+    const stone = rockMaterial(this.materials);
+    const moss = this.mat(0x4b7653);
+    const spireGeometry = this.geo(new THREE.ConeGeometry(1, 1, 7));
+    for (const [cx, cz, count] of [[-44, -36, 7], [48, -24, 6], [31, 55, 5]]) {
+      for (let i = 0; i < count; i++) {
+        const a = i * 2.39996;
+        const x = cx + Math.cos(a) * (1.5 + i * 1.15);
+        const z = cz + Math.sin(a) * (1.5 + i * 1.15);
+        const height = 3.5 + (i * 17 % 11);
+        const spire = new THREE.Mesh(spireGeometry, i % 4 === 0 ? moss : stone);
+        spire.scale.set(1.8 + (i % 3) * 0.5, height, 1.8 + (i % 3) * 0.5);
+        spire.position.set(x, this.localTerrainHeightAt(x, z) + height * 0.47, z);
+        spire.rotation.z = Math.sin(a) * 0.12;
+        spire.castShadow = true;
+        group.add(spire);
+      }
+    }
+    const x = 31, z = -28;
+    const ground = this.localTerrainHeightAt(x, z);
+    for (const [radius, height, y] of [[8, 0.8, 0.4], [6.4, 0.65, 1.1]]) {
+      const terrace = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(radius, radius + 0.3, height, 12)), stone);
+      terrace.position.set(x, ground + y, z);
+      terrace.receiveShadow = true;
+      group.add(terrace);
+    }
+    const basin = new THREE.Mesh(this.geo(new THREE.TorusGeometry(5.5, 0.55, 7, 32)), moss);
+    basin.position.set(x, ground + 1.68, z);
+    basin.rotation.x = Math.PI / 2;
+    group.add(basin);
+    const water = new THREE.Mesh(this.geo(new THREE.CircleGeometry(5.4, 32)), new THREE.MeshStandardMaterial({ color: 0x399da4, metalness: 0.1, roughness: 0.28, transparent: true, opacity: 0.9 }));
+    this.materials.push(water.material as THREE.Material);
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(x, ground + 1.55, z);
+    group.add(water);
+    return group;
   }
 
   /**
@@ -689,19 +797,33 @@ export class EnvironmentBuilder {
     return m;
   }
 
-  public update(elapsed: number): void {
+  public update(elapsed: number, dayNight = 0): void {
     this.foliageMaterials.forEach((m) => {
       m.uniforms.uTime.value = elapsed;
     });
 
     this.root.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.material && !Array.isArray(m.material) && (m.material as THREE.ShaderMaterial).uniforms?.uTime) {
-        (m.material as THREE.ShaderMaterial).uniforms.uTime.value = elapsed;
+      if (m.material && !Array.isArray(m.material)) {
+        const sm = m.material as THREE.ShaderMaterial;
+        if (sm.uniforms?.uTime) sm.uniforms.uTime.value = elapsed;
+        if (sm.uniforms?.uDayNight) sm.uniforms.uDayNight.value = dayNight;
       }
     });
 
     if (this.clouds) this.clouds.rotation.y = elapsed * 0.002;
+    if (this.spray) {
+      const positions = this.spray.geometry.getAttribute('position') as THREE.BufferAttribute;
+      for (let i = 0; i < positions.count; i++) {
+        const phase = (elapsed * (0.36 + (i % 7) * 0.035) + i * 0.619) % 1;
+        const angle = i * 2.39996;
+        const spread = 1.0 + phase * 5.0;
+        const x = -18 + Math.cos(angle) * spread;
+        const z = 18 + Math.sin(angle) * spread;
+        positions.setXYZ(i, x, this.localTerrainHeightAt(x, z) + 0.4 + phase * (2.0 + i % 4), z);
+      }
+      positions.needsUpdate = true;
+    }
   }
 
   public dispose(): void {

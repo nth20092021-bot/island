@@ -64,7 +64,7 @@ export class EnergyBeamShader {
     this.mesh.name = 'EnergyBeam';
 
     const ringMaterial = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8,
+      color: options.color ?? 0xfbbf24,
       transparent: true,
       opacity: 0.35,
       blending: THREE.AdditiveBlending,

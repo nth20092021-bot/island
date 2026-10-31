@@ -9,6 +9,7 @@ export interface TreasureChest {
   glow: THREE.Mesh;
   particles: THREE.Points;
   goldMound: THREE.Mesh;
+  light?: THREE.PointLight;
 }
 
 /**
@@ -416,7 +417,12 @@ export class TreasureChestBuilder {
     label.position.set(0, H + R + 0.55, 0);
     root.add(label);
 
-    const entry: TreasureChest = { root, base, lid, glow, particles, goldMound };
+    // Đèn ánh sáng vàng ấm áp trong đêm khi được chọn
+    const light = new THREE.PointLight(0xfbbf24, 0, 16, 1.4);
+    light.position.set(0, 0.85, 0);
+    root.add(light);
+
+    const entry: TreasureChest = { root, base, lid, glow, particles, goldMound, light };
     this.entries.set(chest.id, entry);
     return entry;
   }
@@ -487,12 +493,36 @@ export class TreasureChestBuilder {
       { x: 1.6, y: 1.8, z: 1.6, duration: 1.4, ease: 'power2.out' }
     );
 
-    // 4. Đĩa hào quang vàng dưới đất sáng rực rồi dịu dần
+    // 4. Ánh sáng vàng bừng tỏa rực rỡ trong đêm
+    if (e.light) {
+      gsap.fromTo(
+        e.light,
+        { intensity: 8.5 },
+        { intensity: 4.2, duration: 1.8, ease: 'power2.out' }
+      );
+    }
+
+    // 5. Đĩa hào quang vàng dưới đất sáng rực rồi dịu dần
     gsap.fromTo(
       e.glow.material as THREE.MeshBasicMaterial,
       { opacity: 0.95 },
-      { opacity: 0.25, duration: 1.6 }
+      { opacity: 0.35, duration: 1.6 }
     );
+  }
+
+  public resetAll(): void {
+    this.entries.forEach((e) => {
+      gsap.killTweensOf(e.lid.rotation);
+      gsap.killTweensOf(e.goldMound.scale);
+      if (e.light) gsap.killTweensOf(e.light);
+      gsap.killTweensOf(e.glow.material);
+
+      e.lid.rotation.x = 0;
+      e.goldMound.scale.set(1.15, 1.0, 1.15);
+      e.particles.visible = false;
+      (e.glow.material as THREE.MeshBasicMaterial).opacity = 0;
+      if (e.light) e.light.intensity = 0;
+    });
   }
 
   public highlight(id: number, active: boolean): void {
@@ -500,8 +530,14 @@ export class TreasureChestBuilder {
     if (e) {
       gsap.to(e.glow.material as THREE.MeshBasicMaterial, {
         opacity: active ? 0.85 : 0,
-        duration: 0.25
+        duration: 0.4
       });
+      if (e.light) {
+        gsap.to(e.light, {
+          intensity: active ? 4.5 : 0,
+          duration: 0.4
+        });
+      }
     }
   }
 

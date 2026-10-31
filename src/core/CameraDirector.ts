@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 import { ChestData, globalEventBus } from './EventBus';
 import { HeightSampler } from './ChestManager';
+import { ISLAND_SCALE } from './IslandLayout';
 
 export interface CameraDirectorConfig {
   overviewPosition: THREE.Vector3;
@@ -10,8 +11,8 @@ export interface CameraDirectorConfig {
 }
 
 export const DEFAULT_CAMERA_CONFIG: CameraDirectorConfig = {
-  overviewPosition: new THREE.Vector3(0, 56, 110),
-  overviewLookAt: new THREE.Vector3(0, 10, 0),
+  overviewPosition: new THREE.Vector3(0, 76, 163),
+  overviewLookAt: new THREE.Vector3(0, 14, 0),
   flightDuration: 9.8 // 5 giây bay 1 vòng 360 độ ngắm toàn cảnh đảo hùng vĩ + 4.8 giây sà xuống rương
 };
 
@@ -180,13 +181,13 @@ export class CameraDirector {
   ): void {
     this.isFlying = true;
 
-    const islandCenter = new THREE.Vector3(0, 10, 0);
+    const islandCenter = new THREE.Vector3(0, 14, 0);
     const finalLookTarget = targetChest.position.clone().add(new THREE.Vector3(0, 0.55, 0));
 
     // Điểm xuất phát của camera
     const startPos = this.config.overviewPosition.clone();
     const startAngle = Math.atan2(startPos.z, startPos.x);
-    const orbitRadius = Math.sqrt(startPos.x * startPos.x + startPos.z * startPos.z) || 110;
+    const orbitRadius = Math.sqrt(startPos.x * startPos.x + startPos.z * startPos.z) || 110 * ISLAND_SCALE;
     const orbitAltitude = startPos.y || 56;
 
     // Chuẩn bị đường bay sà xuống rương (Giai đoạn 2)
@@ -232,15 +233,6 @@ export class CameraDirector {
           this.currentLookAt.lerp(islandCenter, 0.08);
           this.camera.lookAt(this.currentLookAt);
 
-          // Quét tia sáng lướt qua các cảnh quan trên đảo
-          const scanIndex = Math.floor(orbitProgress * allChests.length * 1.5) % allChests.length;
-          const scanningChest = allChests[scanIndex];
-          if (scanningChest) {
-            globalEventBus.emit('BEAM_SCAN_TARGET', {
-              chestId: scanningChest.id,
-              position: scanningChest.position
-            });
-          }
         } else {
           // ==========================================
           // GIAI ĐOẠN 2: LƯỚT SÀ XUỐNG RƯƠNG CHIẾN THẮNG
@@ -261,11 +253,6 @@ export class CameraDirector {
           this.currentLookAt.lerp(desiredLook, 0.12);
           this.camera.lookAt(this.currentLookAt);
 
-          // Tia sáng thiên giới chiếu rọi xuống rương mục tiêu
-          globalEventBus.emit('BEAM_SCAN_TARGET', {
-            chestId: targetChest.id,
-            position: targetChest.position
-          });
         }
 
         // Bắn sự kiện tiến trình camera

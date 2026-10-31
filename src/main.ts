@@ -1,3 +1,4 @@
+import gsap from 'gsap';
 import * as THREE from 'three';
 import { ChestManager } from './core/ChestManager';
 import { CameraDirector } from './core/CameraDirector';
@@ -28,6 +29,7 @@ class GameApp {
   private winnerNameEl!: HTMLElement;
   private winnerChestIdEl!: HTMLElement;
   private btnCloseWinner!: HTMLButtonElement;
+  private goldenFlash!: HTMLElement;
 
   constructor() {
     this.initDOM();
@@ -54,6 +56,7 @@ class GameApp {
     this.winnerNameEl = document.getElementById('winner-name') as HTMLElement;
     this.winnerChestIdEl = document.getElementById('winner-chest-id') as HTMLElement;
     this.btnCloseWinner = document.getElementById('btn-close-winner') as HTMLButtonElement;
+    this.goldenFlash = document.getElementById('golden-flash') as HTMLElement;
   }
 
   private initThree(): void {
@@ -61,7 +64,7 @@ class GameApp {
 
     // 1. Scene nhiệt đới tươi sáng
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x9acbdc); // Fallback khi shader bầu trời chưa được khởi tạo
+    this.scene.background = null; // Bầu trời do SkyShader quản lý toàn diện (Ngày: Ảnh 1, Đêm: Ảnh 2)
     this.scene.fog = new THREE.FogExp2(0xaacdd0, 0.0025);
 
     // 2. Camera: Vị trí ban đầu nhìn thẳng góc 45 độ xuống hòn đảo và 28 chiếc rương
@@ -71,8 +74,8 @@ class GameApp {
       0.1,
       1000
     );
-    this.camera.position.set(0, 56, 110);
-    this.camera.lookAt(0, 10, 0);
+    this.camera.position.set(0, 76, 163);
+    this.camera.lookAt(0, 14, 0);
 
     // 3. Renderer: gắn trực tiếp vào #app kích thước 100vw x 100vh
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -93,7 +96,7 @@ class GameApp {
     this.graphicsEngine = new GraphicsEngine();
     const heightSampler = (x: number, z: number) => this.graphicsEngine.getTerrainHeightAt(x, z);
 
-    // 2. Quản lý 28 rương: Phân bổ dọc con đường mòn xoắn ốc và neo sát mặt đất
+    // 2. Rải đều 28 rương trên bốn vành đảo, tránh suối/công trình và neo sát mặt đất
     this.chestManager = new ChestManager();
     this.allChests = this.chestManager.generateChests(undefined, heightSampler);
 
@@ -117,12 +120,12 @@ class GameApp {
       item.className = 'student-item';
       const zoneName =
         chest.index < 7
-          ? 'Bãi biển & Cầu tàu'
+          ? 'Bãi biển & Cột đá'
           : chest.index < 14
-          ? 'Thung lũng & Suối'
+          ? 'Ven rừng & Suối'
           : chest.index < 21
-          ? 'Rừng cây & Cầu gỗ'
-          : 'Bể đá cổ & Cao nguyên';
+          ? 'Rừng cây & Bể đá'
+          : 'Cao nguyên & Đài cổ';
       item.innerHTML = `<span>#${chest.id} ${chest.student.name}</span> <span style="color:#34d399;">${zoneName}</span>`;
       this.studentsPreview.appendChild(item);
     });
@@ -163,12 +166,13 @@ class GameApp {
       }
     });
 
-    // 3. Reset Camera
+    // 3. Reset Camera: Trở về góc nhìn tổng quan & chuyển lại Trời Sáng
     this.btnResetCam.addEventListener('click', () => {
       this.cameraDirector.resetToOverview(false);
       this.winnerBanner.classList.add('hidden');
       this.startContainer.classList.remove('hidden');
       this.settingsPopover.classList.add('hidden');
+      this.graphicsEngine.transitionToDay(2.0);
     });
 
     // 4. Nút Tiếp tục / Chơi lại ở Winner Banner
@@ -176,14 +180,39 @@ class GameApp {
       this.winnerBanner.classList.add('hidden');
       this.cameraDirector.resetToOverview(false);
       this.startContainer.classList.remove('hidden');
+      this.graphicsEngine.transitionToDay(2.0);
     });
   }
 
   private initGameEvents(): void {
     globalEventBus.on('CHEST_ARRIVED', ({ chestId, studentName }) => {
+      // Lưu sẵn thông tin người thắng, đợi ánh sáng vàng bùng nổ rồi mới hiển thị
       this.winnerNameEl.textContent = studentName;
       this.winnerChestIdEl.textContent = `Rương May Mắn #${chestId}`;
-      this.winnerBanner.classList.remove('hidden');
+    });
+
+    // Khi mở rương: Ánh sáng vàng bùng sáng lóa toàn màn hình rồi hé lộ tên học sinh
+    globalEventBus.on('CHEST_OPENED', () => {
+      // 1. Bùng nổ ánh sáng vàng rực sáng toàn màn hình
+      gsap.to(this.goldenFlash, {
+        opacity: 0.98,
+        duration: 0.22,
+        ease: 'power2.in',
+        onComplete: () => {
+          // 2. Giữ ánh sáng vàng chói lọi trong 0.45s
+          gsap.delayedCall(0.45, () => {
+            // 3. Dịu dần ánh sáng vàng hé lộ rương kho báu vàng
+            gsap.to(this.goldenFlash, {
+              opacity: 0,
+              duration: 0.95,
+              ease: 'power2.out'
+            });
+
+            // 4. Bảng tên học sinh vinh danh xuất hiện trang trọng
+            this.winnerBanner.classList.remove('hidden');
+          });
+        }
+      });
     });
   }
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ChestData, Student } from './EventBus';
+import { ISLAND_SCALE, ISLAND_SHORE_RADIUS, riverDistance } from './IslandLayout';
 
 export const DEFAULT_STUDENTS: Student[] = [
   { id: 1, name: 'Nguyễn An Bình' },
@@ -33,17 +34,17 @@ export const DEFAULT_STUDENTS: Student[] = [
 ];
 
 export interface IslandConfig {
-  beachRadius: number;     // Bán kính bờ biển bãi cát ngoài cùng = 64m
-  volcanoRadius: number;   // Bán kính cao nguyên đỉnh = 14m
+  beachRadius: number;     // Bán kính ngoài cùng dành cho rương
+  volcanoRadius: number;   // Bán kính lõi không đặt rương (bể đá cổ)
   spiralTurns: number;     // Vòng xoắn đường mòn thiên nhiên = 2.4
   totalChests: number;     // Đúng 28 rương kho báu
-  beachHeight: number;     // Độ cao bãi biển = 1.8m
-  volcanoHeight: number;   // Độ cao đài ngắm cảnh đỉnh = 22m
+  beachHeight: number;     // Giá trị tương thích cấu hình cũ
+  volcanoHeight: number;   // Giá trị tương thích cấu hình cũ
 }
 
 export const DEFAULT_ISLAND_CONFIG: IslandConfig = {
-  beachRadius: 64.0,
-  volcanoRadius: 14.0,
+  beachRadius: ISLAND_SHORE_RADIUS - 9,
+  volcanoRadius: 16.0 * ISLAND_SCALE,
   spiralTurns: 2.4,
   totalChests: 28,
   beachHeight: 1.8,
@@ -54,11 +55,7 @@ export type HeightSampler = (x: number, z: number) => number;
 
 /**
  * ChestManager: Quản lý vị trí 3D của đúng 28 chiếc rương kho báu rải rác trên đảo nhiệt đới tươi tốt
- * - 4 Phân vùng sinh thái tự nhiên:
- *   + Rương 1 - 7: Bãi cát vàng & Rặng dừa ven biển
- *   + Rương 8 - 14: Thung lũng hoa cỏ ven suối & Chân thác nước
- *   + Rương 15 - 21: Rừng cây nhiệt đới & Sườn đồi cỏ ngọc bích
- *   + Rương 22 - 28: Cao nguyên & Đài ngắm cảnh mặt trời trên đỉnh
+ * - Bốn vành diện tích, mỗi vành bảy rương xoay lệch góc, tránh suối và công trình.
  * - Tự động neo khít bề mặt địa hình cỏ/cát (không lơ lửng, không chìm vào đá).
  */
 export class ChestManager {
@@ -84,34 +81,40 @@ export class ChestManager {
     const initialAngle = -Math.PI / 4;
 
     for (let i = 0; i < count; i++) {
-      // t chạy đều từ 0 (bãi biển) đến 1 (đài ngắm cảnh đỉnh)
-      const t = i / (count - 1);
-
-      // Tọa độ cơ sở theo đường xoắn ốc cảnh quan trên đảo lớn
-      const angle = initialAngle + t * Math.PI * 4.8;
-      const radius = 62.0 - t * 48.0; // Phân bổ rộng khắp từ bờ biển (r=62m) tới cao nguyên bể đá cổ (r=14m)
-
-      const baseX = Math.cos(angle) * radius;
-      const baseZ = Math.sin(angle) * radius;
-
-      // Độ lệch nhẹ tự nhiên 2 bên đường mòn (nằm dưới bóng dừa, ven suối, cạnh tảng đá)
-      const lateralOffset = ((i % 3) - 1) * 2.2;
-      const normalX = -Math.sin(angle);
-      const normalZ = Math.cos(angle);
-
-      const x = baseX + normalX * lateralOffset;
-      const z = baseZ + normalZ * lateralOffset;
+      // Four equal-area bands, seven evenly spaced sectors each. Rotate adjacent bands
+      // to avoid radial rows and keep every quadrant populated.
+      const ring = 3 - Math.floor(i / 7);
+      const sector = i % 7;
+      const outer = this.config.beachRadius;
+      const inner = this.config.volcanoRadius;
+      const radius = Math.sqrt(inner * inner + ((ring + 0.5) / 4) * (outer * outer - inner * inner));
+      const angle = initialAngle + sector * Math.PI * 2 / 7 + ring * 0.41;
+      let x = Math.cos(angle) * radius;
+      let z = Math.sin(angle) * radius;
+      // Avoid stream, falls, summit baths, the second basin and coastal monuments.
+      for (let attempt = 0; attempt < 18; attempt++) {
+        const lx = x / ISLAND_SCALE, lz = z / ISLAND_SCALE;
+        const safe = riverDistance(lx, lz) > 6.8
+          && Math.hypot(lx + 18, lz - 18) > 11
+          && Math.hypot(lx - 31, lz + 28) > 10
+          && Math.hypot(lx, lz) > 14.5
+          && Math.hypot(lx + 44, lz + 36) > 15
+          && Math.hypot(lx - 48, lz + 24) > 14
+          && Math.hypot(lx - 31, lz - 55) > 12;
+        if (safe) break;
+        const shifted = angle + (attempt + 1) * 0.17;
+        x = Math.cos(shifted) * radius;
+        z = Math.sin(shifted) * radius;
+      }
 
       // Độ cao chuẩn xác neo sát mặt cỏ/cát từ hàm lấy độ cao địa hình
       const groundHeight = heightSampler
         ? heightSampler(x, z)
-        : 1.5 + Math.pow(Math.cos(THREE.MathUtils.clamp(radius / 66, 0, 1) * (Math.PI / 2)), 1.35) * 19.5;
+        : 2.0 + Math.pow(Math.cos(THREE.MathUtils.clamp(radius / ISLAND_SHORE_RADIUS, 0, 1) * (Math.PI / 2)), 1.35) * 27;
       const y = groundHeight + 0.02;
 
       // Hướng mặt trước rương hơi nghiêng về phía đường đi để camera dễ tiếp cận ngắm nắp rương
-      const tangentX = -Math.sin(angle) * radius + Math.cos(angle) * -48.0;
-      const tangentZ = Math.cos(angle) * radius + Math.sin(angle) * -48.0;
-      const rotationY = Math.atan2(tangentX, tangentZ) - Math.PI / 2 + ((i % 2) - 0.5) * 0.25;
+      const rotationY = Math.atan2(-x, -z) + ((i % 2) - 0.5) * 0.25;
 
       const chest: ChestData = {
         id: students[i].id,
