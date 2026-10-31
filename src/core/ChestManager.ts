@@ -33,29 +33,33 @@ export const DEFAULT_STUDENTS: Student[] = [
 ];
 
 export interface IslandConfig {
-  beachRadius: number;     // Bán kính bãi biển (ngoài cùng) = 40
-  volcanoRadius: number;   // Bán kính miệng núi lửa = 9
-  spiralTurns: number;     // 2.4 vòng xoắn ốc
-  totalChests: number;     // Đúng 28 rương
-  beachHeight: number;     // Độ cao bãi biển
-  volcanoHeight: number;   // Độ cao đỉnh núi lửa
+  beachRadius: number;     // Bán kính bờ biển bãi cát ngoài cùng = 40
+  volcanoRadius: number;   // Bán kính cao nguyên đỉnh = 8.5 (giữ tên tương thích)
+  spiralTurns: number;     // Vòng xoắn đường mòn thiên nhiên = 2.4
+  totalChests: number;     // Đúng 28 rương kho báu
+  beachHeight: number;     // Độ cao bãi biển = 1.35
+  volcanoHeight: number;   // Độ cao cao nguyên đỉnh = 13.5
 }
 
 export const DEFAULT_ISLAND_CONFIG: IslandConfig = {
   beachRadius: 40.0,
-  volcanoRadius: 9.0,
+  volcanoRadius: 8.5,
   spiralTurns: 2.4,
   totalChests: 28,
-  beachHeight: 1.0,
-  volcanoHeight: 22.0
+  beachHeight: 1.35,
+  volcanoHeight: 13.5
 };
 
 export type HeightSampler = (x: number, z: number) => number;
 
 /**
- * ChestManager: Quản lý vị trí không gian 3D của đúng 28 chiếc rương kho báu
- * phân bổ dọc theo con đường mòn xoắn ốc (spiral trail) tự nhiên của đảo,
- * neo độ cao khít với bề mặt địa hình 3D (không lơ lửng, không chìm vào đá).
+ * ChestManager: Quản lý vị trí 3D của đúng 28 chiếc rương kho báu rải rác trên đảo nhiệt đới tươi tốt
+ * - 4 Phân vùng sinh thái tự nhiên:
+ *   + Rương 1 - 7: Bãi cát vàng & Rặng dừa ven biển
+ *   + Rương 8 - 14: Thung lũng hoa cỏ ven suối & Chân thác nước
+ *   + Rương 15 - 21: Rừng cây nhiệt đới & Sườn đồi cỏ ngọc bích
+ *   + Rương 22 - 28: Cao nguyên & Đài ngắm cảnh mặt trời trên đỉnh
+ * - Tự động neo khít bề mặt địa hình cỏ/cát (không lơ lửng, không chìm vào đá).
  */
 export class ChestManager {
   private chests: ChestData[] = [];
@@ -67,41 +71,47 @@ export class ChestManager {
   }
 
   /**
-   * Tạo 28 vị trí rương dọc theo con đường mòn xoắn ốc của đảo
-   * @param customStudents Danh sách học sinh tùy chọn (mặc định 28 học sinh Việt Nam)
-   * @param heightSampler Hàm lấy độ cao địa hình từ GraphicsEngine / EnvironmentBuilder
+   * Tạo 28 vị trí rương rải rác tự nhiên dọc theo các vùng sinh thái của đảo
    */
   public generateChests(customStudents?: Student[], heightSampler?: HeightSampler): ChestData[] {
-    const students = customStudents && customStudents.length >= this.config.totalChests
-      ? customStudents.slice(0, this.config.totalChests)
-      : DEFAULT_STUDENTS;
+    const students =
+      customStudents && customStudents.length >= this.config.totalChests
+        ? customStudents.slice(0, this.config.totalChests)
+        : DEFAULT_STUDENTS;
 
     this.chests = [];
     const count = this.config.totalChests;
     const initialAngle = -Math.PI / 4;
 
     for (let i = 0; i < count; i++) {
-      // t chạy đều từ 0 (bãi biển) đến 1 (đỉnh núi lửa)
+      // t chạy đều từ 0 (bãi biển) đến 1 (đài ngắm cảnh đỉnh)
       const t = i / (count - 1);
 
-      // Công thức đường mòn xoắn ốc đồng bộ với createSpiralTrail() của EnvironmentBuilder
+      // Tọa độ cơ sở theo đường mòn xoắn ốc xuyên rừng
       const angle = initialAngle + t * Math.PI * 4.8;
-      const radius = 40 - t * 31; // Từ r=40 về r=9
+      const radius = 39.5 - t * 31.5; // Từ r=39.5 về r=8
 
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
+      const baseX = Math.cos(angle) * radius;
+      const baseZ = Math.sin(angle) * radius;
 
-      // Lấy độ cao chuẩn xác từ hàm địa hình Procedural Noise của đảo
-      const groundHeight = heightSampler ? heightSampler(x, z) : 1.35 + (1 - radius / 44) * 12.7;
-      const y = groundHeight + 0.02; // Đặt rương khít ngay trên mặt đất
+      // Độ lệch nhẹ tự nhiên 2 bên đường mòn (nằm dưới bóng dừa, kề khóm hoa, cạnh tảng đá)
+      const lateralOffset = ((i % 3) - 1) * 1.35;
+      const normalX = -Math.sin(angle);
+      const normalZ = Math.cos(angle);
 
-      // Hướng mặt trước của rương hơi quay ra phía đường mòn để camera tiếp cận dễ thấy nắp
-      const nextT = Math.min(1, t + 0.02);
-      const nextAngle = initialAngle + nextT * Math.PI * 4.8;
-      const nextR = 40 - nextT * 31;
-      const dirX = Math.cos(nextAngle) * nextR - x;
-      const dirZ = Math.sin(nextAngle) * nextR - z;
-      const rotationY = Math.atan2(dirX, dirZ) - Math.PI / 2;
+      const x = baseX + normalX * lateralOffset;
+      const z = baseZ + normalZ * lateralOffset;
+
+      // Độ cao chuẩn xác neo sát mặt cỏ/cát
+      const groundHeight = heightSampler
+        ? heightSampler(x, z)
+        : 1.35 + Math.pow(Math.cos(THREE.MathUtils.clamp(radius / 42, 0, 1) * (Math.PI / 2)), 1.4) * 11.8;
+      const y = groundHeight + 0.02;
+
+      // Hướng mặt trước rương hơi nghiêng về phía lối đi để camera dễ tiếp cận ngắm nắp rương
+      const tangentX = -Math.sin(angle) * radius + Math.cos(angle) * -31.5;
+      const tangentZ = Math.cos(angle) * radius + Math.sin(angle) * -31.5;
+      const rotationY = Math.atan2(tangentX, tangentZ) - Math.PI / 2 + ((i % 2) - 0.5) * 0.25;
 
       const chest: ChestData = {
         id: students[i].id,
@@ -119,7 +129,7 @@ export class ChestManager {
   }
 
   /**
-   * Cập nhật lại cao độ của 28 rương theo địa hình sau khi GraphicsEngine đã khởi tạo xong
+   * Cập nhật lại cao độ của 28 rương theo bề mặt địa hình mới
    */
   public updateElevations(heightSampler: HeightSampler): void {
     this.chests.forEach((chest) => {
@@ -140,17 +150,14 @@ export class ChestManager {
       this.generateChests();
     }
 
-    this.chests.forEach((c) => {
-      c.isWinner = false;
-    });
+    this.chests.forEach((c) => (c.isWinner = false));
 
     let winner: ChestData;
     if (specifiedIndexOrId !== undefined) {
       const found = this.getChest(specifiedIndexOrId);
       winner = found || this.chests[Math.floor(Math.random() * this.chests.length)];
     } else {
-      const randomIndex = Math.floor(Math.random() * this.chests.length);
-      winner = this.chests[randomIndex];
+      winner = this.chests[Math.floor(Math.random() * this.chests.length)];
     }
 
     winner.isWinner = true;

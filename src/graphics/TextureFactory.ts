@@ -1,12 +1,170 @@
 import * as THREE from 'three';
 
-function texture(size: number, mode: 'sand' | 'rock' | 'wood' | 'metal'): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas'); canvas.width = canvas.height = size; const ctx = canvas.getContext('2d')!; const image = ctx.createImageData(size, size);
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) { const i = (y * size + x) * 4, n = (Math.sin(x * 0.035) + Math.sin(y * 0.021) + Math.sin((x + y) * 0.011)) * 18; let r = 0, g = 0, b = 0; if (mode === 'sand') { r = 205 + n; g = 158 + n * 0.8; b = 82 + n * 0.35; } else if (mode === 'rock') { r = 78 + n * 0.45; g = 83 + n * 0.4; b = 80 + n * 0.3; } else if (mode === 'wood') { r = 88 + n * 0.7; g = 42 + n * 0.35; b = 21 + n * 0.15; } else { r = 105 + n; g = 112 + n; b = 120 + n; } image.data[i] = r; image.data[i + 1] = g; image.data[i + 2] = b; image.data[i + 3] = 255; }
-  ctx.putImageData(image, 0, 0); for (let i = 0; i < 700; i++) { ctx.globalAlpha = 0.12; ctx.fillStyle = mode === 'sand' ? '#fff' : mode === 'wood' ? '#e0a15d' : '#15191c'; ctx.fillRect(Math.random() * size, Math.random() * size, 1 + Math.random() * 4, 1 + Math.random() * 2); }
-  const t = new THREE.CanvasTexture(canvas); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3); return t;
+export type TextureMode = 'sand' | 'rock' | 'wood' | 'metal' | 'grass';
+
+function hash(x: number, y: number, seed: number): number {
+  let n = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(seed, 1442695041);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
 }
-export function makePbrSet(mode: 'sand' | 'rock' | 'wood' | 'metal'): { map: THREE.CanvasTexture; roughnessMap: THREE.CanvasTexture; normalMap: THREE.CanvasTexture } { return { map: texture(1024, mode), roughnessMap: texture(256, mode), normalMap: texture(256, mode) }; }
-export function sandMaterial(store: Array<THREE.Material | THREE.Texture>): THREE.MeshStandardMaterial { const p = makePbrSet('sand'), m = new THREE.MeshStandardMaterial({ map: p.map, roughnessMap: p.roughnessMap, normalMap: p.normalMap, roughness: 0.82, flatShading: true }); store.push(m, p.map, p.roughnessMap, p.normalMap); return m; }
-export function rockMaterial(store: Array<THREE.Material | THREE.Texture>): THREE.MeshStandardMaterial { const p = makePbrSet('rock'), m = new THREE.MeshStandardMaterial({ map: p.map, roughnessMap: p.roughnessMap, normalMap: p.normalMap, roughness: 0.85, flatShading: true }); store.push(m, p.map, p.roughnessMap, p.normalMap); return m; }
-export function chestPbrMaterials(): { wood: THREE.MeshStandardMaterial; metal: THREE.MeshStandardMaterial } { const w = makePbrSet('wood'), m = makePbrSet('metal'); return { wood: new THREE.MeshStandardMaterial({ map: w.map, normalMap: w.normalMap, roughnessMap: w.roughnessMap, roughness: 0.48 }), metal: new THREE.MeshStandardMaterial({ map: m.map, metalness: 0.85, roughness: 0.25, normalMap: m.normalMap }) }; }
+
+// Periodic noise makes each tile seamless, even when wrapped on large meshes.
+function noise(x: number, y: number, cells: number, seed: number): number {
+  const ix = Math.floor(x), iy = Math.floor(y);
+  const fx = x - ix, fy = y - iy;
+  const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+  const h = (a: number, b: number) => hash((a + cells) % cells, (b + cells) % cells, seed);
+  const a = h(ix, iy) * (1 - u) + h(ix + 1, iy) * u;
+  const b = h(ix, iy + 1) * (1 - u) + h(ix + 1, iy + 1) * u;
+  return a * (1 - v) + b * v;
+}
+
+function surface(mode: TextureMode, x: number, y: number, size: number): { color: number[]; height: number; roughness: number } {
+  const u = x / size, v = y / size;
+  const broad = noise(u * 8, v * 8, 8, 12);
+  const detail = noise(u * 48, v * 48, 48, 42);
+  const grain = hash(x, y, 83);
+  if (mode === 'wood') {
+    const lines = Math.sin(v * Math.PI * 48 + broad * 4 + Math.sin(u * Math.PI * 8) * 0.6);
+    const t = broad * 0.22 + detail * 0.17 + lines * 0.12;
+    return { color: [87 + t * 100, 46 + t * 65, 24 + t * 38], height: t + lines * 0.12, roughness: 0.65 + detail * 0.16 };
+  }
+  if (mode === 'rock') {
+    const veins = Math.abs(Math.sin((u + v * 0.65) * Math.PI * 18 + broad * 7));
+    const t = broad * 0.48 + detail * 0.32 + grain * 0.12;
+    return { color: [83 + t * 52 - veins * 11, 94 + t * 47 + broad * 12, 89 + t * 44], height: t + veins * 0.16, roughness: 0.79 + detail * 0.13 };
+  }
+  if (mode === 'sand') {
+    const t = broad * 0.27 + detail * 0.16 + grain * 0.22;
+    return { color: [197 + t * 63, 160 + t * 69, 106 + t * 68], height: t, roughness: 0.83 + grain * 0.13 };
+  }
+  if (mode === 'grass') {
+    const blades = Math.sin(u * Math.PI * 96 + detail * 3) * Math.sin(v * Math.PI * 72);
+    const t = broad * 0.25 + detail * 0.24 + blades * 0.06;
+    // Pale albedo preserves vertex biome colors instead of multiplying green by green.
+    return { color: [190 + t * 52, 202 + t * 44, 167 + t * 52], height: t + grain * 0.1, roughness: 0.86 + detail * 0.1 };
+  }
+  const brushed = Math.sin(v * Math.PI * 96) * 0.05 + grain * 0.08;
+  return { color: [202 + broad * 36 + brushed * 25, 148 + broad * 36 + brushed * 20, 54 + broad * 27], height: brushed + detail * 0.12, roughness: 0.32 + broad * 0.18 };
+}
+
+export function makePbrSet(mode: TextureMode): {
+  map: THREE.CanvasTexture;
+  roughnessMap: THREE.CanvasTexture;
+  normalMap: THREE.CanvasTexture;
+} {
+  const size = 256;
+  const albedo = document.createElement('canvas');
+  const rough = document.createElement('canvas');
+  const normal = document.createElement('canvas');
+  for (const canvas of [albedo, rough, normal]) canvas.width = canvas.height = size;
+  const a = albedo.getContext('2d')!, r = rough.getContext('2d')!, n = normal.getContext('2d')!;
+  const ai = a.createImageData(size, size), ri = r.createImageData(size, size), ni = n.createImageData(size, size);
+  const heights = new Float32Array(size * size);
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const i = y * size + x, o = i * 4;
+    const s = surface(mode, x, y, size);
+    heights[i] = s.height;
+    ai.data[o] = clamp(s.color[0]); ai.data[o + 1] = clamp(s.color[1]); ai.data[o + 2] = clamp(s.color[2]); ai.data[o + 3] = 255;
+    const rv = clamp(s.roughness * 255);
+    ri.data[o] = ri.data[o + 1] = ri.data[o + 2] = rv; ri.data[o + 3] = 255;
+  }
+  const strength = mode === 'rock' ? 2.2 : mode === 'sand' ? 1.2 : 1.5;
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const o = (y * size + x) * 4;
+    const dx = (heights[y * size + (x + 1) % size] - heights[y * size + (x + size - 1) % size]) * strength;
+    const dy = (heights[((y + 1) % size) * size + x] - heights[((y + size - 1) % size) * size + x]) * strength;
+    const length = Math.hypot(dx, dy, 1);
+    ni.data[o] = clamp(128 - dx / length * 127);
+    ni.data[o + 1] = clamp(128 - dy / length * 127);
+    ni.data[o + 2] = clamp(128 + 127 / length);
+    ni.data[o + 3] = 255;
+  }
+  a.putImageData(ai, 0, 0); r.putImageData(ri, 0, 0); n.putImageData(ni, 0, 0);
+  const map = new THREE.CanvasTexture(albedo);
+  const roughnessMap = new THREE.CanvasTexture(rough);
+  const normalMap = new THREE.CanvasTexture(normal);
+  map.colorSpace = THREE.SRGBColorSpace;
+  for (const texture of [map, roughnessMap, normalMap]) {
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.anisotropy = 4;
+  }
+  return { map, roughnessMap, normalMap };
+}
+
+export function grassMaterial(
+  store: Array<THREE.Material | THREE.Texture>,
+  useVertexColors = true
+): THREE.MeshStandardMaterial {
+  const p = makePbrSet('grass');
+  for (const texture of Object.values(p)) texture.repeat.set(7, 7);
+  const m = new THREE.MeshStandardMaterial({
+    map: p.map,
+    roughnessMap: p.roughnessMap,
+    normalMap: p.normalMap,
+    roughness: 0.95,
+    normalScale: new THREE.Vector2(0.35, 0.35),
+    vertexColors: useVertexColors,
+    flatShading: true
+  });
+  store.push(m, p.map, p.roughnessMap, p.normalMap);
+  return m;
+}
+
+export function sandMaterial(
+  store: Array<THREE.Material | THREE.Texture>,
+  useVertexColors = false
+): THREE.MeshStandardMaterial {
+  const p = makePbrSet('sand');
+  const m = new THREE.MeshStandardMaterial({
+    map: p.map,
+    roughnessMap: p.roughnessMap,
+    normalMap: p.normalMap,
+    roughness: 1,
+    normalScale: new THREE.Vector2(0.5, 0.5),
+    vertexColors: useVertexColors,
+    flatShading: true
+  });
+  store.push(m, p.map, p.roughnessMap, p.normalMap);
+  return m;
+}
+
+export function rockMaterial(store: Array<THREE.Material | THREE.Texture>): THREE.MeshStandardMaterial {
+  const p = makePbrSet('rock');
+  const m = new THREE.MeshStandardMaterial({
+    map: p.map,
+    roughnessMap: p.roughnessMap,
+    normalMap: p.normalMap,
+    roughness: 0.9,
+    normalScale: new THREE.Vector2(0.55, 0.55),
+    flatShading: true
+  });
+  store.push(m, p.map, p.roughnessMap, p.normalMap);
+  return m;
+}
+
+export function chestPbrMaterials(): {
+  wood: THREE.MeshStandardMaterial;
+  metal: THREE.MeshStandardMaterial;
+} {
+  const w = makePbrSet('wood');
+  const m = makePbrSet('metal');
+  return {
+    wood: new THREE.MeshStandardMaterial({
+      map: w.map,
+      normalMap: w.normalMap,
+      roughnessMap: w.roughnessMap,
+      roughness: 0.82,
+      normalScale: new THREE.Vector2(0.45, 0.45)
+    }),
+    metal: new THREE.MeshStandardMaterial({
+      map: m.map,
+      metalness: 0.72,
+      roughness: 0.65,
+      normalMap: m.normalMap,
+      roughnessMap: m.roughnessMap,
+      normalScale: new THREE.Vector2(0.22, 0.22)
+    })
+  };
+}

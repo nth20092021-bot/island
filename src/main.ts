@@ -39,6 +39,7 @@ class GameApp {
     this.initGameEvents();
 
     window.addEventListener('resize', () => this.onResize());
+    (window as any).__gameApp = this;
     this.animate();
   }
 
@@ -63,8 +64,8 @@ class GameApp {
 
     // 1. Scene nhiệt đới tươi sáng
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x38bdf8); // Bầu trời nhiệt đới trong xanh
-    this.scene.fog = new THREE.FogExp2(0x7dd3fc, 0.003); // Sương mờ chân trời dịu mắt
+    this.scene.background = new THREE.Color(0x9acbdc); // Fallback khi shader bầu trời chưa được khởi tạo
+    this.scene.fog = new THREE.FogExp2(0xaacdd0, 0.0025);
 
     // 2. Camera: Vị trí ban đầu nhìn thẳng góc 45 độ xuống hòn đảo và 28 chiếc rương
     this.camera = new THREE.PerspectiveCamera(
@@ -81,7 +82,8 @@ class GameApp {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -116,7 +118,15 @@ class GameApp {
       // Danh sách cuộn xem nhanh 28 học sinh
       const item = document.createElement('div');
       item.className = 'student-item';
-      item.innerHTML = `<span>#${chest.id} ${chest.student.name}</span> <span style="color:#38bdf8;">Tầng ${chest.index < 10 ? 'Bãi biển' : chest.index < 20 ? 'Sườn đồi' : 'Đỉnh núi'}</span>`;
+      const zoneName =
+        chest.index < 7
+          ? 'Bãi biển & Cọ'
+          : chest.index < 14
+          ? 'Thung lũng & Suối'
+          : chest.index < 21
+          ? 'Rừng cây & Đồi xanh'
+          : 'Cao nguyên & Đỉnh';
+      item.innerHTML = `<span>#${chest.id} ${chest.student.name}</span> <span style="color:#34d399;">${zoneName}</span>`;
       this.studentsPreview.appendChild(item);
     });
   }

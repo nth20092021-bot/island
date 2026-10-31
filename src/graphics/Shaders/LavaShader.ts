@@ -1,2 +1,40 @@
-export const lavaVertexShader = `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
-export const lavaFragmentShader = `varying vec2 vUv; uniform float uTime; void main(){float n=.5+.5*sin(vUv.x*34.0+sin(vUv.y*19.0+uTime*2.5)*2.2);vec3 c=mix(vec3(1.,.12,.01),vec3(1.,.9,.18),n);gl_FragColor=vec4(c*(1.5+n*1.8),.98);}`;
+/**
+ * Shaders cho dòng suối mát và thác nước nhiệt đới (thay thế dung nham cũ)
+ */
+export const streamVertexShader = /* glsl */ `
+  varying vec2 vUv;
+  varying vec3 vWorld;
+  uniform float uTime;
+
+  void main() {
+    vUv = uv;
+    vec3 p = position;
+    // Dòng nước chảy xiết nhấp nhô
+    p.z += sin(p.x * 2.5 + uTime * 3.5) * 0.04;
+    vec4 w = modelMatrix * vec4(p, 1.0);
+    vWorld = w.xyz;
+    gl_Position = projectionMatrix * viewMatrix * w;
+  }
+`;
+
+export const streamFragmentShader = /* glsl */ `
+  varying vec2 vUv;
+  varying vec3 vWorld;
+  uniform float uTime;
+
+  void main() {
+    // Dòng suối trong vắt với bọt nước trắng xoá chảy xiết
+    float flow = fract(vUv.y * 3.5 - uTime * 1.8);
+    float foam = smoothstep(0.4, 0.85, sin(vUv.x * 16.0 + flow * 12.0) * 0.5 + 0.5);
+
+    vec3 waterClean = vec3(0.12, 0.88, 0.82); // Xanh ngọc suối nguồn
+    vec3 foamWhite = vec3(0.95, 1.0, 1.0);     // Bọt thác trắng xoá
+
+    vec3 color = mix(waterClean, foamWhite, foam * 0.55);
+    gl_FragColor = vec4(color, 0.88);
+  }
+`;
+
+// Tương thích ngược nếu còn import cũ
+export const lavaVertexShader = streamVertexShader;
+export const lavaFragmentShader = streamFragmentShader;
