@@ -245,9 +245,59 @@ class GameApp {
   };
 }
 
+/**
+ * Tự động đẩy sang Google Chrome / trình duyệt ngoài nếu mở trong WebView phụ (Messenger, Facebook, Zalo...)
+ */
+function handleInAppBrowser(): void {
+  const ua = navigator.userAgent || navigator.vendor || '';
+  const isInApp = /FBAN|FBAV|FB_IAB|FBIOS|Messenger|Zalo|Instagram|TikTok|Line/i.test(ua);
+  if (!isInApp) return;
+
+  const href = window.location.href;
+  const isAndroid = /Android/i.test(ua);
+  const noScheme = href.replace(/^https?:\/\//, '');
+
+  if (isAndroid) {
+    // Tự động chuyển thẳng sang Google Chrome trên Android qua Chrome Intent
+    window.location.href = `intent://${noScheme}#Intent;scheme=https;package=com.android.chrome;end;`;
+  } else {
+    // Thử scheme Google Chrome trên iOS
+    window.location.href = `googlechrome://${noScheme}`;
+  }
+
+  // Banner hỗ trợ bấm thủ công nếu app chặn tự động chuyển hướng
+  const promptEl = document.createElement('div');
+  promptEl.id = 'inapp-browser-prompt';
+  promptEl.className = 'inapp-prompt';
+  promptEl.innerHTML = `
+    <div class="inapp-prompt-content">
+      <span>🚀 Đang mở trong Messenger. Bấm để mở bằng <b>Google Chrome</b> cho trải nghiệm 3D mượt nhất!</span>
+      <button id="btn-open-external" class="inapp-btn">Mở bằng Google</button>
+      <button id="btn-close-inapp" class="inapp-close" aria-label="Đóng">✕</button>
+    </div>
+  `;
+  document.body.prepend(promptEl);
+
+  document.getElementById('btn-open-external')?.addEventListener('click', () => {
+    if (isAndroid) {
+      window.location.href = `intent://${noScheme}#Intent;scheme=https;package=com.android.chrome;end;`;
+    } else {
+      window.location.href = `googlechrome://${noScheme}`;
+    }
+  });
+
+  document.getElementById('btn-close-inapp')?.addEventListener('click', () => {
+    promptEl.remove();
+  });
+}
+
 // Khởi tạo app an toàn bất kể trạng thái DOM
 if (document.readyState === 'loading') {
-  window.addEventListener('DOMContentLoaded', () => new GameApp());
+  window.addEventListener('DOMContentLoaded', () => {
+    handleInAppBrowser();
+    new GameApp();
+  });
 } else {
+  handleInAppBrowser();
   new GameApp();
 }
