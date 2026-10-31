@@ -1,0 +1,1 @@
+export const foliageVertexShader = `uniform float uTime;uniform float uWind;uniform vec3 uColor;varying vec3 vColor;void main(){vec3 p=position;float sway=sin(uTime*1.6+position.y*1.7+position.x)*uWind*position.y;p.x+=sway;p.z+=cos(uTime+position.x)*uWind*.35*position.y;vColor=uColor;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`;

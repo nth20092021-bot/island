@@ -94,12 +94,18 @@ class GameApp {
     this.chestManager = new ChestManager();
     this.allChests = this.chestManager.generateChests();
 
-    // 2. Đạo diễn Camera
-    this.cameraDirector = new CameraDirector(this.camera);
-
-    // 3. Khởi tạo Đồ họa Đảo Low-Poly do Codex xây dựng
+    // 2. Khởi tạo Đồ họa Đảo Low-Poly do Codex xây dựng
     this.graphicsEngine = new IslandGraphicsEngine();
+
+    // Tự động neo độ cao rương khớp hoàn hảo mặt địa hình procedural của Codex
+    this.allChests.forEach((c) => {
+      c.position.y = this.graphicsEngine.getTerrainHeightAt(c.position.x, c.position.z) + 0.05;
+    });
+
     this.graphicsEngine.init(this.scene, this.camera, this.renderer, this.allChests);
+
+    // 3. Đạo diễn Camera
+    this.cameraDirector = new CameraDirector(this.camera);
 
     // 4. Nạp dữ liệu 28 học sinh vào Popover cài đặt
     this.allChests.forEach((chest) => {

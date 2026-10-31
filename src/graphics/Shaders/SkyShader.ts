@@ -1,0 +1,2 @@
+export const skyVertexShader = `varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`;
+export const skyFragmentShader = `varying vec3 vP;void main(){float h=normalize(vP).y;vec3 c=mix(vec3(.07,.06,.2),vec3(1.,.42,.18),smoothstep(-.2,.7,h));gl_FragColor=vec4(c,1.);}`;

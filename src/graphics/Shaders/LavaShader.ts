@@ -1,0 +1,2 @@
+export const lavaVertexShader = `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+export const lavaFragmentShader = `varying vec2 vUv; uniform float uTime; void main(){float n=.5+.5*sin(vUv.x*34.0+sin(vUv.y*19.0+uTime*2.5)*2.2);vec3 c=mix(vec3(1.,.12,.01),vec3(1.,.9,.18),n);gl_FragColor=vec4(c*(1.5+n*1.8),.98);}`;

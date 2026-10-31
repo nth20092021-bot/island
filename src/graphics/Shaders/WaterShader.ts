@@ -1,0 +1,2 @@
+export const waterVertexShader = `varying vec3 vWorld; uniform float uTime; void main(){vec3 p=position;p.y+=sin(p.x*.35+uTime)*.08+cos(p.z*.27+uTime*1.2)*.06;vec4 w=modelMatrix*vec4(p,1.0);vWorld=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`;
+export const waterFragmentShader = `varying vec3 vWorld; uniform float uTime; void main(){float depth=clamp(length(vWorld.xz)/115.0,0.0,1.0);float foam=smoothstep(.82,.98,sin(vWorld.x*.35+uTime*2.0)*.5+.5);vec3 c=mix(vec3(.05,.75,.68),vec3(.015,.08,.25),depth);c=mix(c,vec3(.9,1.0,1.0),foam*.28);gl_FragColor=vec4(c,.78);}`;
