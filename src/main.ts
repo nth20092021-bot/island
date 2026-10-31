@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { ChestManager } from './core/ChestManager';
 import { CameraDirector } from './core/CameraDirector';
 import { GraphicsEngine } from './graphics/GraphicsEngine';
-import { SKY_HORIZON_FOG } from './graphics/Shaders/SkyShader';
 import { globalEventBus, Student, ChestData } from './core/EventBus';
 
 class GameApp {
@@ -65,8 +64,8 @@ class GameApp {
 
     // 1. Scene nhiệt đới tươi sáng
     this.scene = new THREE.Scene();
-    this.scene.background = null; // Bầu trời ban ngày do SkyShader đảm nhiệm
-    this.scene.fog = new THREE.FogExp2(SKY_HORIZON_FOG, 0.0022);
+    this.scene.background = null; // Bầu trời do SkyShader quản lý toàn diện (Ngày: Ảnh 1, Đêm: Ảnh 2)
+    this.scene.fog = new THREE.FogExp2(0xaacdd0, 0.0025);
 
     // 2. Camera: Vị trí ban đầu nhìn thẳng góc 45 độ xuống hòn đảo và 28 chiếc rương
     this.camera = new THREE.PerspectiveCamera(
@@ -189,15 +188,14 @@ class GameApp {
     globalEventBus.on('CHEST_ARRIVED', ({ chestId, studentName }) => {
       // Lưu sẵn thông tin người thắng, đợi ánh sáng bùng nổ rồi mới hiển thị
       this.winnerNameEl.textContent = studentName;
-      this.winnerChestIdEl.textContent = `Rương #${chestId}`;
+      this.winnerChestIdEl.textContent = `Rương May Mắn #${chestId}`;
     });
 
     // Khi mở rương: Sáng lên khắp màn hình trong khoảng 1s rồi mờ dần đưa ra tên học sinh trong rương
     globalEventBus.on('CHEST_OPENED', () => {
-      // 1. Sáng bừng lên khắp màn hình. Giữ đỉnh chói ở mức 0.92 để cột sáng và
-      //    kho báu bung ra sau đó vẫn nhìn thấy thay vì trắng xóa cả khung hình.
+      // 1. Sáng bừng lên khắp màn hình
       gsap.to(this.goldenFlash, {
-        opacity: 0.92,
+        opacity: 1,
         duration: 0.2,
         ease: 'power2.in',
         onComplete: () => {
