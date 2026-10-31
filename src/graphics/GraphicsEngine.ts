@@ -1,3 +1,4 @@
+import gsap from 'gsap';
 import * as THREE from 'three';
 import { ChestData, globalEventBus } from '../core/EventBus';
 import { IGraphicsEngine } from './IGraphicsEngine';
@@ -68,17 +69,17 @@ export class GraphicsEngine implements IGraphicsEngine {
   }
 
   private setupLighting(): void {
-    // Mặt trời nhiệt đới ấm áp rực rỡ
-    const sun = new THREE.DirectionalLight(0xffedcd, 2.75);
-    sun.position.set(-32, 58, 26);
+    // Mặt trời nhiệt đới ấm áp rực rỡ chiếu sáng hòn đảo rộng lớn
+    const sun = new THREE.DirectionalLight(0xffedcd, 2.85);
+    sun.position.set(-48, 85, 38);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 160;
-    sun.shadow.camera.left = -65;
-    sun.shadow.camera.right = 65;
-    sun.shadow.camera.top = 65;
-    sun.shadow.camera.bottom = -65;
+    sun.shadow.camera.far = 240;
+    sun.shadow.camera.left = -95;
+    sun.shadow.camera.right = 95;
+    sun.shadow.camera.top = 95;
+    sun.shadow.camera.bottom = -95;
     sun.shadow.bias = -0.0004;
     sun.shadow.normalBias = 0.025;
     sun.shadow.radius = 2;
@@ -92,7 +93,18 @@ export class GraphicsEngine implements IGraphicsEngine {
 
   private setupEvents(): void {
     this.unsubs.push(
-      globalEventBus.on('CHEST_OPENED', (p) => this.openChest(p.chestId)),
+      globalEventBus.on('CHEST_OPENED', (p) => {
+        this.openChest(p.chestId);
+        // Khi mở nắp rương, làm mờ dần cột tia sáng năng lượng để lộ rõ rương kho báu vàng
+        gsap.to(this.beam.material.uniforms.uIntensity, {
+          value: 0,
+          duration: 0.65,
+          onComplete: () => {
+            this.setBeamTarget(null);
+            this.beam.material.uniforms.uIntensity.value = 1.4;
+          }
+        });
+      }),
       globalEventBus.on('BEAM_SCAN_TARGET', (p) => {
         this.setBeamTarget(p.position, 1.4);
         this.highlightChest(p.chestId, true);
@@ -125,7 +137,7 @@ export class GraphicsEngine implements IGraphicsEngine {
     this.beam.shockwave.visible = visible;
     if (target) {
       // Tia sáng chiếu từ mây trời trên cao xuống rương
-      this.beam.setTarget(target, new THREE.Vector3(0, 32, 0));
+      this.beam.setTarget(target, new THREE.Vector3(0, 48, 0));
     }
   }
 

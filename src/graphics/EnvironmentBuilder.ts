@@ -14,12 +14,15 @@ export interface EnvironmentBuilderOptions {
 }
 
 /**
- * EnvironmentBuilder: Dựng hòn đảo nhiệt đới tươi tốt ngập tràn cây cối (Lush Tropical Paradise Island)
- * - Địa hình đồi cỏ xanh ngát mềm mại (Rolling Green Hills & Meadows)
- * - Bãi biển cát vàng nhiệt đới và rặng dừa nghiêng bóng
- * - Rừng cây rậm rạp nhiều tầng tán lá (cây nhiệt đới tán rộng, cây thông, cọ)
- * - Thác nước & dòng suối trong vắt từ cao nguyên chảy xuống
- * - Đài ngắm cảnh mặt trời cổ kính trên đỉnh cao nguyên xanh ngát (thay thế miệng núi lửa)
+ * EnvironmentBuilder: Dựng hòn đảo nhiệt đới hùng vĩ quy mô lớn (Majestic Tropical Paradise Island)
+ * - Bản đồ rộng lớn (bán kính đảo ~70m, biển 260m)
+ * - Địa hình đồi núi trập trùng, cao nguyên xanh, thung lũng sâu
+ * - Thác nước đôi hùng vĩ (Grand Cascading Waterfalls) đổ từ vách đá cao xuống hồ nước ngọt
+ * - Con suối trong lành uốn lượn (Meandering River & Stream) với đá cuội và bọt nước
+ * - Bể đá cổ & Quần thể tàn tích cổ kính (Ancient Mossy Stone Baths & Sanctuary)
+ * - Cầu gỗ vượt suối (Timber Footbridge) & Cầu tàu biển dài
+ * - Rừng cây rậm rạp xum xuê (130+ cây tán rộng, cọ bãi biển, thông cao nguyên)
+ * - Mây trời bồng bềnh đa tầng
  */
 export class EnvironmentBuilder {
   private readonly opts: Required<EnvironmentBuilderOptions>;
@@ -38,76 +41,81 @@ export class EnvironmentBuilder {
     };
     this.opts = {
       seed: options.seed ?? 88,
-      treeCount: options.treeCount ?? 75,
-      palmCount: options.palmCount ?? 26,
-      shrubCount: options.shrubCount ?? 55,
-      rockCount: options.rockCount ?? 38,
-      cloudCount: options.cloudCount ?? 14
+      treeCount: options.treeCount ?? 125,
+      palmCount: options.palmCount ?? 42,
+      shrubCount: options.shrubCount ?? 65,
+      rockCount: options.rockCount ?? 55,
+      cloudCount: options.cloudCount ?? 18
     };
   }
 
   public build(): THREE.Group {
     this.root = new THREE.Group();
-    this.root.name = 'LushTropicalParadiseIsland';
+    this.root.name = 'MajesticTropicalIsland';
 
-    // 1. Biển xanh & Vách đá ngầm đảo
+    // 1. Biển ngọc lam bao la & Vách đá ngầm hùng vĩ
     this.root.add(this.createOcean());
     this.root.add(this.createSeaCliffs());
 
-    // 2. Bề mặt địa hình đồi cỏ đa tầng sinh thái
+    // 2. Bề mặt địa hình đồi núi hùng vĩ quy mô lớn
     this.root.add(this.createTerrainSurface());
 
-    // 3. Công trình & Điểm nhấn cảnh quan
-    this.root.add(this.createPier());
-    this.root.add(this.createSummitLookout());
-    this.root.add(this.createFreshwaterStreams());
+    // 3. Công trình tự nhiên & Tàn tích cổ
+    this.root.add(this.createAncientStoneBaths()); // Bể đá cổ & đài phun nước rêu phong
+    this.root.add(this.createGrandWaterfalls());  // Thác nước đôi đổ từ vách đá
+    this.root.add(this.createMeanderingRiver());  // Con suối uốn lượn qua thung lũng
+    this.root.add(this.createTimberBridge());     // Cầu gỗ mộc bắc qua suối
+    this.root.add(this.createPier());             // Cầu tàu ven biển
 
-    // 4. Hệ thực vật nhiệt đới tươi tốt (Nhiều cây cối, cọ, bụi hoa)
+    // 4. Hệ sinh thái thực vật nhiệt đới rậm rạp (Nhiều cây cối, cọ, hoa cỏ)
     this.root.add(this.createBeachPalms());
-    this.root.add(this.createLushCanopyForest());
+    this.root.add(this.createCanopyForest());
     this.root.add(this.createHighlandTrees());
-    this.root.add(this.createTropicalShrubsAndFlowers());
+    this.root.add(this.createTropicalShrubs());
 
     // 5. Tảng đá phủ rêu & Mây trời bồng bềnh
-    this.root.add(this.createMossyRocks());
+    this.root.add(this.createMossyBoulders());
     this.clouds = this.createClouds();
     this.root.add(this.clouds);
 
     return this.root;
   }
 
-  /**
-   * Hàm nhiễu Perlin/Sine mượt mà tạo hình dáng đồi tự nhiên
-   */
   private noise(x: number, z: number): number {
-    const a = Math.sin(x * 0.17 + this.opts.seed) * 43758.5453;
-    const b = Math.sin(z * 0.21 - this.opts.seed * 0.7) * 24634.6345;
-    const c = Math.sin((x + z) * 0.08) * 0.6;
+    const a = Math.sin(x * 0.11 + this.opts.seed) * 43758.5453;
+    const b = Math.sin(z * 0.14 - this.opts.seed * 0.7) * 24634.6345;
+    const c = Math.sin((x + z) * 0.05) * 0.7;
     return ((a - Math.floor(a)) * 0.58 + (b - Math.floor(b)) * 0.42) * 2 - 1 + c;
   }
 
   /**
-   * Lấy độ cao chuẩn xác tại tọa độ (x, z) của hòn đảo tươi tốt
-   * Không có miệng núi lửa hay hố sâu - đỉnh là cao nguyên xanh ngát thoai thoải
+   * Lấy độ cao chuẩn xác tại tọa độ (x, z) của hòn đảo hùng vĩ
+   * Bán kính đảo mở rộng ~68m, đỉnh núi cao ~22m với thung lũng suối tự nhiên
    */
   public getTerrainHeightAt(x: number, z: number): number {
     const r = Math.sqrt(x * x + z * z);
-    if (r > 48) return -2.5;
+    if (r > 74) return -2.5;
 
-    // Sườn đồi thoai thoải dạng đường cong hình sin từ bãi biển (r=42, h=1.4) lên cao nguyên đỉnh (r=0, h=13.2)
-    const normalizedR = THREE.MathUtils.clamp(r / 42.0, 0, 1);
-    const hillCurve = Math.cos(normalizedR * (Math.PI / 2));
-    const base = 1.35 + Math.pow(hillCurve, 1.4) * 11.8;
+    // Tỉ lệ khoảng cách từ tâm đến bờ biển (r=66m)
+    const normR = THREE.MathUtils.clamp(r / 66.0, 0, 1);
+    const hillShape = Math.cos(normR * (Math.PI / 2));
 
-    // Các nếp gấp uốn lượn nhẹ tạo thung lũng cho suối và đồi cỏ
-    const valley = Math.sin(x * 0.11) * Math.cos(z * 0.11) * 1.1;
-    const detail = this.noise(x, z) * (r < 12 ? 0.35 : 0.7);
+    // Độ cao cơ sở từ bờ biển (1.4m) lên đỉnh cao nguyên hùng vĩ (21.5m)
+    const base = 1.4 + Math.pow(hillShape, 1.35) * 20.0;
 
-    return THREE.MathUtils.clamp(base + valley + detail, 0.4, 14.5);
+    // Các sống núi và nếp gấp sườn đồi
+    const mountainRidges = Math.sin(x * 0.07) * Math.cos(z * 0.07) * 2.6;
+
+    // Thung lũng lòng suối uốn lượn tự nhiên
+    const riverValley = -Math.exp(-Math.pow((x - z * 0.45 - 14) / 7.0, 2)) * 2.4;
+
+    const detail = this.noise(x, z) * (r < 18 ? 0.4 : 0.85);
+
+    return THREE.MathUtils.clamp(base + mountainRidges + riverValley + detail, 0.5, 25.5);
   }
 
   public getTerrainNormalAt(x: number, z: number): THREE.Vector3 {
-    const e = 0.2;
+    const e = 0.25;
     const dx = this.getTerrainHeightAt(x + e, z) - this.getTerrainHeightAt(x - e, z);
     const dz = this.getTerrainHeightAt(x, z + e) - this.getTerrainHeightAt(x, z - e);
     return new THREE.Vector3(-dx / (2 * e), 1, -dz / (2 * e)).normalize();
@@ -125,11 +133,10 @@ export class EnvironmentBuilder {
   }
 
   /**
-   * 1. Biển ngọc lam nhiệt đới bao quanh
+   * 1. Biển ngọc lam nhiệt đới bao la (bán kính mở rộng 260m)
    */
   private createOcean(): THREE.Mesh {
-    const g = this.geo(new THREE.CircleGeometry(210, 128));
-    // The ocean reaches beyond the clouds; fine ripples are shaded per fragment.
+    const g = this.geo(new THREE.CircleGeometry(260, 128));
     g.rotateX(-Math.PI / 2);
     const m = new THREE.ShaderMaterial({
       vertexShader: waterVertexShader,
@@ -140,25 +147,25 @@ export class EnvironmentBuilder {
     });
     this.materials.push(m);
     const water = new THREE.Mesh(g, m);
-    water.name = 'TropicalLagoonOcean';
+    water.name = 'MajesticLagoonOcean';
     water.position.y = 0.2;
     return water;
   }
 
   /**
-   * 2. Vách đá ngầm nâng đỡ hòn đảo
+   * 2. Vách đá ngầm nâng đỡ hòn đảo hùng vĩ
    */
   private createSeaCliffs(): THREE.Mesh {
-    const g = this.geo(new THREE.CylinderGeometry(20, 39, 13, 28, 8));
+    const g = this.geo(new THREE.CylinderGeometry(36, 68, 16, 36, 8));
     const p = g.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i);
       const z = p.getZ(i);
-      const s = 1 + this.noise(x, z) * 0.11;
+      const s = 1 + this.noise(x, z) * 0.12;
       p.setX(i, x * s);
       p.setZ(i, z * s);
     }
-    g.translate(0, -5.2, 0);
+    g.translate(0, -6.5, 0);
     const cliff = new THREE.Mesh(g, rockMaterial(this.materials));
     cliff.name = 'IslandSeaCliffs';
     cliff.castShadow = true;
@@ -167,45 +174,49 @@ export class EnvironmentBuilder {
   }
 
   /**
-   * 3. Bề mặt địa hình đồi cỏ nhiệt đới đa tầng sinh thái với Vertex Colors
+   * 3. Bề mặt địa hình đồi núi nhiệt đới hùng vĩ với Vertex Colors (160m x 160m)
    */
   private createTerrainSurface(): THREE.Mesh {
-    const size = 96;
-    const segments = 76;
+    const size = 160;
+    const segments = 96;
     const g = this.geo(new THREE.PlaneGeometry(size, size, segments, segments));
     g.rotateX(-Math.PI / 2);
 
     const p = g.attributes.position as THREE.BufferAttribute;
     const colors = new Float32Array(p.count * 3);
 
-    const sandColor = new THREE.Color(0xf6d89b);     // Cát vàng mịn bãi biển
+    const sandColor = new THREE.Color(0xf6d89b);     // Cát vàng bãi biển
     const shoreGrass = new THREE.Color(0xa3e635);    // Cỏ xanh mạ chuyển tiếp
     const lushGrass = new THREE.Color(0x22c55e);     // Cỏ ngọc bích sườn đồi
     const forestMeadow = new THREE.Color(0x16a34a);  // Thảm cỏ rừng rậm
     const highlandGreen = new THREE.Color(0x4ade80); // Cỏ cao nguyên tươi mát ngập nắng
+    const mountainPeak = new THREE.Color(0x86efac);  // Đỉnh núi cao nguyên
 
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i);
       const z = p.getZ(i);
       const r = Math.sqrt(x * x + z * z);
-      const h = r > 44.5 ? -2.2 : this.getTerrainHeightAt(x, z);
+      const h = r > 72.0 ? -2.8 : this.getTerrainHeightAt(x, z);
       p.setY(i, h);
 
       let c = lushGrass;
-      if (h < 2.2) {
+      if (h < 2.4) {
         c = sandColor;
-      } else if (h < 4.2) {
-        const t = (h - 2.2) / 2.0;
+      } else if (h < 5.0) {
+        const t = (h - 2.4) / 2.6;
         c = sandColor.clone().lerp(shoreGrass, t);
-      } else if (h < 8.2) {
-        const t = (h - 4.2) / 4.0;
+      } else if (h < 11.5) {
+        const t = (h - 5.0) / 6.5;
         c = shoreGrass.clone().lerp(lushGrass, t);
-      } else if (h < 11.2) {
-        const t = (h - 8.2) / 3.0;
+      } else if (h < 18.0) {
+        const t = (h - 11.5) / 6.5;
         c = lushGrass.clone().lerp(forestMeadow, t);
-      } else {
-        const t = Math.min(1.0, (h - 11.2) / 2.5);
+      } else if (h < 22.5) {
+        const t = (h - 18.0) / 4.5;
         c = forestMeadow.clone().lerp(highlandGreen, t);
+      } else {
+        const t = Math.min(1.0, (h - 22.5) / 3.0);
+        c = highlandGreen.clone().lerp(mountainPeak, t);
       }
 
       colors[i * 3] = c.r;
@@ -217,190 +228,263 @@ export class EnvironmentBuilder {
     g.computeVertexNormals();
 
     const mesh = new THREE.Mesh(g, grassMaterial(this.materials, true));
-    mesh.name = 'LushTerrainSurface';
+    mesh.name = 'MajesticTerrainSurface';
     mesh.receiveShadow = true;
     return mesh;
   }
 
   /**
-   * 4. Con đường mòn đất đá uốn lượn xuyên rừng lên đỉnh cao nguyên
+   * 4. Bể đá cổ & Quần thể tàn tích cổ kính (Ancient Mossy Stone Baths & Sanctuary)
    */
-  private createScenicTrail(): THREE.Line {
-    const points: THREE.Vector3[] = [];
-    const count = 130;
-    for (let i = 0; i <= count; i++) {
-      const t = i / count;
-      const a = -Math.PI / 4 + t * Math.PI * 4.8;
-      const r = 40 - t * 31;
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-      points.push(new THREE.Vector3(x, this.getTerrainHeightAt(x, z) + 0.12, z));
-    }
-    const g = this.geo(new THREE.BufferGeometry().setFromPoints(points));
-    const m = new THREE.LineBasicMaterial({ color: 0xd4a373, transparent: true, opacity: 0.85, linewidth: 2 });
-    this.materials.push(m);
-    return new THREE.Line(g, m);
-  }
-
-  /**
-   * 5. Cầu tàu gỗ mộc mạc bên bờ biển Tây Nam
-   */
-  private createPier(): THREE.Group {
+  private createAncientStoneBaths(): THREE.Group {
     const group = new THREE.Group();
-    const wood = this.mat(0x8a5435, 0.72);
+    group.name = 'AncientStoneBaths';
 
-    for (let i = 0; i < 8; i++) {
-      const post = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(0.24, 0.3, 3.4, 6)), wood);
-      post.position.set(-33 + i * 1.35, 1.7, -10);
-      post.rotation.z = (this.random() - 0.5) * 0.08;
-      group.add(post);
-    }
-    const deck = new THREE.Mesh(this.geo(new THREE.BoxGeometry(12.5, 0.38, 2.3)), wood);
-    deck.position.set(-28.5, 3.1, -10);
-    deck.rotation.y = 0.14;
-    deck.castShadow = true;
-    group.add(deck);
-
-    // Đèn lồng treo đầu cầu tàu
-    const lantern = new THREE.Mesh(this.geo(new THREE.DodecahedronGeometry(0.4)), this.mat(0xfef08a, 0.2));
-    lantern.position.set(-34.5, 3.8, -10);
-    group.add(lantern);
-
-    return group;
-  }
-
-  /**
-   * 6. Đài ngắm cảnh mặt trời cổ kính trên đỉnh cao nguyên xanh ngát (thay thế miệng núi lửa)
-   */
-  private createSummitLookout(): THREE.Group {
-    const group = new THREE.Group();
-    const stone = this.mat(0x9ca3af, 0.85);
-    const sunGold = this.mat(0xfbbf24, 0.3, 0.7);
+    const stoneMat = this.mat(0x9ca3af, 0.88);
+    const ancientGold = this.mat(0xfbbf24, 0.25, 0.75);
 
     const summitY = this.getTerrainHeightAt(0, 0);
 
-    // Sân ngắm cảnh tròn bằng đá phủ rêu
-    const platform = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(7.5, 8.2, 0.7, 24)), stone);
-    platform.position.set(0, summitY + 0.35, 0);
-    platform.receiveShadow = true;
-    group.add(platform);
+    // Bể đá cổ tầng 1 (Tầng lớn bên ngoài)
+    const bathTier1 = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(11.5, 12.8, 1.1, 32)), stoneMat);
+    bathTier1.position.set(0, summitY + 0.55, 0);
+    bathTier1.receiveShadow = true;
+    group.add(bathTier1);
 
-    // Vành gờ bảo vệ thấp bằng đá quanh đài ngắm cảnh
-    const rim = new THREE.Mesh(this.geo(new THREE.TorusGeometry(7.2, 0.45, 8, 24)), stone);
-    rim.rotation.x = Math.PI / 2;
-    rim.position.set(0, summitY + 0.85, 0);
-    group.add(rim);
+    // Bể đá cổ tầng 2 (Tầng cao bên trong)
+    const bathTier2 = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(8.2, 9.4, 1.2, 28)), stoneMat);
+    bathTier2.position.set(0, summitY + 1.6, 0);
+    bathTier2.receiveShadow = true;
+    group.add(bathTier2);
 
-    // 4 Cột đá cổ kính nhìn ra 4 phương
-    for (let i = 0; i < 4; i++) {
-      const angle = (i * Math.PI) / 2 + Math.PI / 4;
-      const px = Math.cos(angle) * 5.5;
-      const pz = Math.sin(angle) * 5.5;
-      const pillar = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(0.45, 0.55, 3.8, 8)), stone);
-      pillar.position.set(px, summitY + 2.2, pz);
-      pillar.castShadow = true;
-      group.add(pillar);
-    }
-
-    // Hồ nước cẩm thạch trong lành ở trung tâm đài ngắm cảnh
-    const pool = new THREE.Mesh(
-      this.geo(new THREE.CircleGeometry(4.2, 24)),
+    // Lòng hồ nước trong xanh trong bể đá cổ
+    const bathWater = new THREE.Mesh(
+      this.geo(new THREE.CircleGeometry(7.6, 28)),
       new THREE.ShaderMaterial({
         vertexShader: waterVertexShader,
         fragmentShader: waterFragmentShader,
         uniforms: { uTime: { value: 0 } },
-        transparent: true,
-        side: THREE.DoubleSide
+        transparent: true
       })
     );
-    pool.rotation.x = -Math.PI / 2;
-    pool.position.set(0, summitY + 0.75, 0);
-    this.materials.push(pool.material as THREE.Material);
-    group.add(pool);
+    bathWater.rotation.x = -Math.PI / 2;
+    bathWater.position.set(0, summitY + 2.15, 0);
+    group.add(bathWater);
 
-    // Biểu tượng mặt trời hoàng kim ở giữa hồ nước
-    const sunOrb = new THREE.Mesh(this.geo(new THREE.IcosahedronGeometry(0.9, 2)), sunGold);
-    sunOrb.position.set(0, summitY + 1.8, 0);
+    // 6 Cột đá cổ kính uy nghiêm bao quanh bể đá cổ
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI) / 3;
+      const px = Math.cos(angle) * 7.8;
+      const pz = Math.sin(angle) * 7.8;
+
+      const column = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(0.5, 0.65, 5.2, 8)), stoneMat);
+      column.position.set(px, summitY + 3.8, pz);
+      column.castShadow = true;
+      group.add(column);
+
+      // Đầu cột chạm khắc
+      const capital = new THREE.Mesh(this.geo(new THREE.BoxGeometry(1.2, 0.45, 1.2)), stoneMat);
+      capital.position.set(px, summitY + 6.3, pz);
+      group.add(capital);
+    }
+
+    // Đài phun nước cổ và biểu tượng thái dương vàng giữa bể đá
+    const centralPedestal = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(1.4, 1.8, 2.2, 16)), stoneMat);
+    centralPedestal.position.set(0, summitY + 2.5, 0);
+    group.add(centralPedestal);
+
+    const sunOrb = new THREE.Mesh(this.geo(new THREE.IcosahedronGeometry(1.2, 2)), ancientGold);
+    sunOrb.position.set(0, summitY + 4.2, 0);
     group.add(sunOrb);
+
+    // Bậc thang đá cổ dẫn lên bể đá
+    for (let s = 0; s < 4; s++) {
+      const step = new THREE.Mesh(this.geo(new THREE.BoxGeometry(4.2 - s * 0.4, 0.35, 1.2)), stoneMat);
+      step.position.set(0, summitY + s * 0.35 + 0.18, 12.2 - s * 0.9);
+      step.receiveShadow = true;
+      group.add(step);
+    }
 
     return group;
   }
 
   /**
-   * 7. Dòng suối và thác nước trong vắt từ cao nguyên chảy xuống biển
+   * 5. Thác nước đôi hùng vĩ (Grand Cascading Waterfalls)
    */
-  private createFreshwaterStreams(): THREE.Group {
+  private createGrandWaterfalls(): THREE.Group {
     const group = new THREE.Group();
-    const streamMat = new THREE.ShaderMaterial({
+    group.name = 'GrandWaterfalls';
+
+    const waterfallMat = new THREE.ShaderMaterial({
       vertexShader: streamVertexShader,
       fragmentShader: streamFragmentShader,
       uniforms: { uTime: { value: 0 } },
       transparent: true,
       side: THREE.DoubleSide
     });
-    this.materials.push(streamMat);
+    this.materials.push(waterfallMat);
 
-    // Đoạn suối uốn lượn xuống bờ đông
-    const streamGeo = this.geo(new THREE.PlaneGeometry(3.2, 22, 6, 20));
-    streamGeo.rotateX(-Math.PI / 2);
-    const streamMesh = new THREE.Mesh(streamGeo, streamMat);
-    streamMesh.position.set(16, 4.5, -8);
-    streamMesh.rotation.y = 0.55;
-    group.add(streamMesh);
+    // Thác nước chính (Thác Tây Bắc) đổ từ vách núi cao 20m xuống chân thung lũng
+    const fall1 = new THREE.Mesh(this.geo(new THREE.PlaneGeometry(6.5, 22, 10, 24)), waterfallMat);
+    fall1.position.set(-18, 9.5, 16);
+    fall1.rotation.y = 0.35;
+    group.add(fall1);
 
-    // Thác nước đổ ra biển ở vách đá
-    for (const x of [-14, 19]) {
-      const sheet = new THREE.Mesh(this.geo(new THREE.PlaneGeometry(3.5, 14, 8, 16)), streamMat);
-      sheet.position.set(x, -1.8, 6);
-      sheet.rotation.y = 0.22;
-      group.add(sheet);
+    // Thác nước phụ (Thác Đông Nam) đổ từ sống đá ra biển
+    const fall2 = new THREE.Mesh(this.geo(new THREE.PlaneGeometry(5.2, 16, 8, 20)), waterfallMat);
+    fall2.position.set(28, 6.2, -12);
+    fall2.rotation.y = -0.42;
+    group.add(fall2);
+
+    // Hồ nước chân thác (Plunge Pool)
+    const poolGeo = this.geo(new THREE.CircleGeometry(8.5, 24));
+    poolGeo.rotateX(-Math.PI / 2);
+    const poolMesh = new THREE.Mesh(poolGeo, waterfallMat);
+    poolMesh.position.set(-18, 1.8, 18);
+    group.add(poolMesh);
+
+    return group;
+  }
+
+  /**
+   * 6. Con suối uốn lượn qua thung lũng (Meandering River & Stream)
+   */
+  private createMeanderingRiver(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'MeanderingRiver';
+
+    const riverMat = new THREE.ShaderMaterial({
+      vertexShader: streamVertexShader,
+      fragmentShader: streamFragmentShader,
+      uniforms: { uTime: { value: 0 } },
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+    this.materials.push(riverMat);
+
+    // Tạo dòng suối uốn khúc nhiều đoạn nối từ hồ chân thác ra biển
+    const riverSegments = [
+      { pos: new THREE.Vector3(-14, 2.6, 22), rotY: 0.4, w: 4.5, l: 18 },
+      { pos: new THREE.Vector3(-2, 2.8, 30), rotY: 0.85, w: 5.2, l: 22 },
+      { pos: new THREE.Vector3(14, 2.4, 38), rotY: 0.55, w: 5.8, l: 20 },
+      { pos: new THREE.Vector3(32, 1.9, 46), rotY: 0.35, w: 6.8, l: 22 }
+    ];
+
+    for (const seg of riverSegments) {
+      const g = this.geo(new THREE.PlaneGeometry(seg.w, seg.l, 6, 16));
+      g.rotateX(-Math.PI / 2);
+      const m = new THREE.Mesh(g, riverMat);
+      m.position.copy(seg.pos);
+      m.rotation.y = seg.rotY;
+      group.add(m);
     }
 
     return group;
   }
 
   /**
-   * 8. Hàng dừa bãi biển (Coconut Palm Trees) nghiêng bóng tự nhiên
+   * 7. Cầu gỗ mộc vượt suối (Timber River Bridge)
+   */
+  private createTimberBridge(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'TimberBridge';
+
+    const wood = this.mat(0x78350f, 0.75);
+
+    // Mặt cầu gỗ dài 8m, rộng 2.4m bắc qua lòng suối
+    const deck = new THREE.Mesh(this.geo(new THREE.BoxGeometry(2.6, 0.32, 9.2)), wood);
+    deck.position.set(-2, 3.8, 30);
+    deck.rotation.y = -0.68;
+    deck.castShadow = true;
+    group.add(deck);
+
+    // Lan can cầu gỗ hai bên
+    for (const sx of [-1.2, 1.2]) {
+      const rail = new THREE.Mesh(this.geo(new THREE.BoxGeometry(0.14, 0.85, 9.2)), wood);
+      rail.position.set(-2 + sx * Math.cos(-0.68), 4.3, 30 + sx * Math.sin(-0.68));
+      rail.rotation.y = -0.68;
+      group.add(rail);
+    }
+
+    // Các trụ cầu cắm xuống lòng suối
+    for (const z of [-3.5, 3.5]) {
+      const post = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(0.24, 0.28, 3.2, 6)), wood);
+      post.position.set(-2, 2.2, 30 + z);
+      group.add(post);
+    }
+
+    return group;
+  }
+
+  /**
+   * 8. Cầu tàu gỗ dài ven biển (Long Ocean Pier)
+   */
+  private createPier(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'OceanPier';
+
+    const wood = this.mat(0x8a5435, 0.72);
+
+    for (let i = 0; i < 11; i++) {
+      const post = new THREE.Mesh(this.geo(new THREE.CylinderGeometry(0.26, 0.32, 3.8, 6)), wood);
+      post.position.set(-52 + i * 1.5, 1.9, -16);
+      group.add(post);
+    }
+
+    const deck = new THREE.Mesh(this.geo(new THREE.BoxGeometry(17.5, 0.42, 2.8)), wood);
+    deck.position.set(-45, 3.4, -16);
+    deck.rotation.y = 0.12;
+    deck.castShadow = true;
+    group.add(deck);
+
+    const lantern = new THREE.Mesh(this.geo(new THREE.DodecahedronGeometry(0.5)), this.mat(0xfef08a, 0.2));
+    lantern.position.set(-53.5, 4.3, -16);
+    group.add(lantern);
+
+    return group;
+  }
+
+  /**
+   * 9. Rặng dừa nhiệt đới bãi biển (Coconut Palm Trees)
    */
   private createBeachPalms(): THREE.Group {
     const group = new THREE.Group();
     const trunkMat = this.foliageMaterial(0x785338, 0.05);
-    const palmFrondMat = this.foliageMaterial(0x16a34a, 0.16);
+    const frondMat = this.foliageMaterial(0x16a34a, 0.16);
 
-    const trunkGeo = this.geo(new THREE.CylinderGeometry(0.22, 0.38, 5.2, 7));
-    const frondGeo = this.geo(new THREE.ConeGeometry(2.4, 1.2, 7));
+    const trunkGeo = this.geo(new THREE.CylinderGeometry(0.24, 0.42, 5.8, 7));
+    const frondGeo = this.geo(new THREE.ConeGeometry(2.8, 1.3, 7));
 
-    const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, this.opts.palmCount);
-    const fronds = new THREE.InstancedMesh(frondGeo, palmFrondMat, this.opts.palmCount);
+    const count = this.opts.palmCount;
+    const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, count);
+    const fronds = new THREE.InstancedMesh(frondGeo, frondMat, count);
 
     const matrix = new THREE.Matrix4();
     const tempQuat = new THREE.Quaternion();
     const tempEuler = new THREE.Euler();
 
-    for (let i = 0; i < this.opts.palmCount; i++) {
-      const a = (i / this.opts.palmCount) * Math.PI * 2 + (this.random() - 0.5) * 0.4;
-      const r = 31 + this.random() * 9;
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + (this.random() - 0.5) * 0.35;
+      const r = 48 + this.random() * 16; // Bố trí dọc theo bờ biển rộng
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       const y = this.getTerrainHeightAt(x, z);
 
-      // Thân dừa nghiêng nhẹ hướng ra biển
-      const leanAngle = 0.18 + this.random() * 0.15;
+      const leanAngle = 0.2 + this.random() * 0.18;
       tempEuler.set(Math.sin(a) * leanAngle, a, Math.cos(a) * leanAngle);
       tempQuat.setFromEuler(tempEuler);
 
       matrix.compose(
-        new THREE.Vector3(x, y + 2.3, z),
+        new THREE.Vector3(x, y + 2.6, z),
         tempQuat,
-        new THREE.Vector3(1, 1 + this.random() * 0.3, 1)
+        new THREE.Vector3(1, 1 + this.random() * 0.35, 1)
       );
       trunks.setMatrixAt(i, matrix);
 
-      // Tán lá dừa xoè rộng trên đỉnh
       matrix.compose(
-        new THREE.Vector3(x, y + 4.9, z),
+        new THREE.Vector3(x, y + 5.5, z),
         new THREE.Quaternion(),
-        new THREE.Vector3(1.2 + this.random() * 0.4, 1, 1.2 + this.random() * 0.4)
+        new THREE.Vector3(1.3 + this.random() * 0.4, 1, 1.3 + this.random() * 0.4)
       );
       fronds.setMatrixAt(i, matrix);
     }
@@ -411,34 +495,34 @@ export class EnvironmentBuilder {
   }
 
   /**
-   * 9. Rừng nhiệt đới tán rộng xum xuê (Lush Broadleaf Canopy Forest)
+   * 10. Rừng cây nhiệt đới tán rộng xum xuê (Lush Broadleaf Forest - 125+ cây)
    */
-  private createLushCanopyForest(): THREE.Group {
+  private createCanopyForest(): THREE.Group {
     const group = new THREE.Group();
     const trunkMat = this.foliageMaterial(0x5c4033, 0.04);
-    const canopyMat1 = this.foliageMaterial(0x22c55e, 0.14); // Xanh ngọc tươi sáng
-    const canopyMat2 = this.foliageMaterial(0x15803d, 0.12); // Xanh rừng rậm đậm
+    const canopyMat = this.foliageMaterial(0x22c55e, 0.14);
 
-    const trunkGeo = this.geo(new THREE.CylinderGeometry(0.28, 0.48, 3.6, 6));
-    const canopyGeo = this.geo(new THREE.DodecahedronGeometry(2.2, 1));
+    const trunkGeo = this.geo(new THREE.CylinderGeometry(0.3, 0.52, 4.2, 6));
+    const canopyGeo = this.geo(new THREE.DodecahedronGeometry(2.5, 1));
 
-    const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, this.opts.treeCount);
-    const foliage = new THREE.InstancedMesh(canopyGeo, canopyMat1, this.opts.treeCount);
+    const count = this.opts.treeCount;
+    const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, count);
+    const foliage = new THREE.InstancedMesh(canopyGeo, canopyMat, count);
 
     const matrix = new THREE.Matrix4();
 
-    for (let i = 0; i < this.opts.treeCount; i++) {
+    for (let i = 0; i < count; i++) {
       const a = this.random() * Math.PI * 2;
-      const r = 12 + this.random() * 18; // Phân bổ trên các sườn đồi và thung lũng
+      const r = 18 + this.random() * 32; // Phân bổ rộng khắp thung lũng và sườn đồi
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       const y = this.getTerrainHeightAt(x, z);
-      const scale = 0.75 + this.random() * 0.6;
+      const scale = 0.8 + this.random() * 0.65;
 
-      matrix.makeTranslation(x, y + 1.8 * scale, z).scale(new THREE.Vector3(scale, scale, scale));
+      matrix.makeTranslation(x, y + 2.1 * scale, z).scale(new THREE.Vector3(scale, scale, scale));
       trunks.setMatrixAt(i, matrix);
 
-      matrix.makeTranslation(x, y + 3.9 * scale, z).scale(new THREE.Vector3(scale * 1.1, scale * 0.9, scale * 1.1));
+      matrix.makeTranslation(x, y + 4.5 * scale, z).scale(new THREE.Vector3(scale * 1.15, scale * 0.95, scale * 1.15));
       foliage.setMatrixAt(i, matrix);
     }
 
@@ -448,16 +532,16 @@ export class EnvironmentBuilder {
   }
 
   /**
-   * 10. Cây thông & Cây tán nhọn cao nguyên (Highland Trees)
+   * 11. Cây thông & Cây tán nhọn cao nguyên (Highland Trees)
    */
   private createHighlandTrees(): THREE.Group {
     const group = new THREE.Group();
-    const count = 32;
+    const count = 45;
     const trunkMat = this.foliageMaterial(0x4a3728, 0.03);
     const pineMat = this.foliageMaterial(0x166534, 0.1);
 
-    const trunkGeo = this.geo(new THREE.CylinderGeometry(0.2, 0.35, 3.2, 6));
-    const coneGeo = this.geo(new THREE.ConeGeometry(1.6, 3.8, 7));
+    const trunkGeo = this.geo(new THREE.CylinderGeometry(0.22, 0.38, 3.8, 6));
+    const coneGeo = this.geo(new THREE.ConeGeometry(1.9, 4.4, 7));
 
     const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, count);
     const pines = new THREE.InstancedMesh(coneGeo, pineMat, count);
@@ -466,16 +550,16 @@ export class EnvironmentBuilder {
 
     for (let i = 0; i < count; i++) {
       const a = this.random() * Math.PI * 2;
-      const r = 7 + this.random() * 12; // Tập trung ở sườn đồi cao
+      const r = 10 + this.random() * 20; // Sườn đồi cao và sống núi
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       const y = this.getTerrainHeightAt(x, z);
-      const s = 0.65 + this.random() * 0.5;
+      const s = 0.7 + this.random() * 0.55;
 
-      matrix.makeTranslation(x, y + 1.5 * s, z).scale(new THREE.Vector3(s, s, s));
+      matrix.makeTranslation(x, y + 1.8 * s, z).scale(new THREE.Vector3(s, s, s));
       trunks.setMatrixAt(i, matrix);
 
-      matrix.makeTranslation(x, y + 3.8 * s, z).scale(new THREE.Vector3(s, s, s));
+      matrix.makeTranslation(x, y + 4.2 * s, z).scale(new THREE.Vector3(s, s, s));
       pines.setMatrixAt(i, matrix);
     }
 
@@ -485,33 +569,34 @@ export class EnvironmentBuilder {
   }
 
   /**
-   * 11. Bụi hoa nhiệt đới & Bụi dương xỉ xanh (Tropical Shrubs & Flowers)
+   * 12. Bụi hoa & Dương xỉ nhiệt đới (Tropical Shrubs & Flowers)
    */
-  private createTropicalShrubsAndFlowers(): THREE.Group {
+  private createTropicalShrubs(): THREE.Group {
     const group = new THREE.Group();
-    const shrubMat = this.foliageMaterial(0x84cc16, 0.18); // Màu hoa cỏ vàng chanh rực rỡ
-    const flowerMat = this.mat(0xf43f5e, 0.4);            // Hoa dâm bụt nhiệt đới hồng đỏ
+    const shrubMat = this.foliageMaterial(0x84cc16, 0.18);
+    const flowerMat = this.mat(0xf43f5e, 0.4);
 
-    const shrubGeo = this.geo(new THREE.IcosahedronGeometry(0.9, 1));
-    const flowerGeo = this.geo(new THREE.DodecahedronGeometry(0.35));
+    const shrubGeo = this.geo(new THREE.IcosahedronGeometry(1.1, 1));
+    const flowerGeo = this.geo(new THREE.DodecahedronGeometry(0.4));
 
-    const shrubs = new THREE.InstancedMesh(shrubGeo, shrubMat, this.opts.shrubCount);
-    const flowers = new THREE.InstancedMesh(flowerGeo, flowerMat, this.opts.shrubCount);
+    const count = this.opts.shrubCount;
+    const shrubs = new THREE.InstancedMesh(shrubGeo, shrubMat, count);
+    const flowers = new THREE.InstancedMesh(flowerGeo, flowerMat, count);
 
     const matrix = new THREE.Matrix4();
 
-    for (let i = 0; i < this.opts.shrubCount; i++) {
+    for (let i = 0; i < count; i++) {
       const a = this.random() * Math.PI * 2;
-      const r = 9 + this.random() * 26;
+      const r = 12 + this.random() * 45;
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       const y = this.getTerrainHeightAt(x, z);
-      const s = 0.5 + this.random() * 0.6;
+      const s = 0.55 + this.random() * 0.7;
 
-      matrix.makeTranslation(x, y + 0.45 * s, z).scale(new THREE.Vector3(s * 1.3, s * 0.7, s * 1.3));
+      matrix.makeTranslation(x, y + 0.5 * s, z).scale(new THREE.Vector3(s * 1.3, s * 0.75, s * 1.3));
       shrubs.setMatrixAt(i, matrix);
 
-      matrix.makeTranslation(x, y + 0.9 * s, z).scale(new THREE.Vector3(s, s, s));
+      matrix.makeTranslation(x, y + 1.0 * s, z).scale(new THREE.Vector3(s, s, s));
       flowers.setMatrixAt(i, matrix);
     }
 
@@ -520,25 +605,26 @@ export class EnvironmentBuilder {
   }
 
   /**
-   * 12. Tảng đá phủ rêu phong (Mossy Granite Rocks)
+   * 13. Tảng đá hoa cương phủ rêu (Mossy Granite Boulders)
    */
-  private createMossyRocks(): THREE.InstancedMesh {
+  private createMossyBoulders(): THREE.InstancedMesh {
+    const count = this.opts.rockCount;
     const rocks = new THREE.InstancedMesh(
-      this.geo(new THREE.DodecahedronGeometry(1.2, 1)),
+      this.geo(new THREE.DodecahedronGeometry(1.5, 1)),
       rockMaterial(this.materials),
-      this.opts.rockCount
+      count
     );
     const matrix = new THREE.Matrix4();
 
-    for (let i = 0; i < this.opts.rockCount; i++) {
+    for (let i = 0; i < count; i++) {
       const a = this.random() * Math.PI * 2;
-      const r = 10 + this.random() * 32;
+      const r = 14 + this.random() * 48;
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       const y = this.getTerrainHeightAt(x, z);
-      const s = 0.5 + this.random() * 1.1;
+      const s = 0.6 + this.random() * 1.3;
 
-      matrix.makeTranslation(x, y + 0.4 * s, z).scale(new THREE.Vector3(s * 1.2, s * 0.7, s * 1.1));
+      matrix.makeTranslation(x, y + 0.5 * s, z).scale(new THREE.Vector3(s * 1.25, s * 0.8, s * 1.2));
       rocks.setMatrixAt(i, matrix);
     }
 
@@ -548,38 +634,43 @@ export class EnvironmentBuilder {
   }
 
   /**
-   * 13. Mây trắng bồng bềnh trôi nhẹ (Floating Paradise Clouds)
+   * 14. Mây trời đa tầng bồng bềnh (Majestic Clouds)
    */
   private createClouds(): THREE.Group {
     const group = new THREE.Group();
     const geometry = this.geo(new THREE.IcosahedronGeometry(1, 1));
     const upper = this.mat(0xfffcf2, 1);
     const under = this.mat(0xc7dce2, 1);
-    const count = this.opts.cloudCount * 6;
-    const tops = new THREE.InstancedMesh(geometry, upper, count);
-    const bases = new THREE.InstancedMesh(geometry, under, this.opts.cloudCount);
+    const count = this.opts.cloudCount;
+    const tops = new THREE.InstancedMesh(geometry, upper, count * 6);
+    const bases = new THREE.InstancedMesh(geometry, under, count);
     const matrix = new THREE.Matrix4();
     const scale = new THREE.Vector3();
     const position = new THREE.Vector3();
-    for (let i = 0; i < this.opts.cloudCount; i++) {
-      const a = (i / this.opts.cloudCount) * Math.PI * 2 + (this.random() - 0.5) * 0.2;
-      const r = 62 + this.random() * 65;
-      const cx = Math.cos(a) * r, cz = Math.sin(a) * r;
-      const cy = 31 + this.random() * 17;
-      position.set(cx, cy - 1, cz);
-      scale.set(5.8, 0.65, 2.7);
+
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + (this.random() - 0.5) * 0.25;
+      const r = 85 + this.random() * 75;
+      const cx = Math.cos(a) * r;
+      const cz = Math.sin(a) * r;
+      const cy = 38 + this.random() * 22;
+
+      position.set(cx, cy - 1.2, cz);
+      scale.set(7.5, 0.8, 3.6);
       matrix.compose(position, new THREE.Quaternion(), scale);
       bases.setMatrixAt(i, matrix);
+
       for (let j = 0; j < 6; j++) {
-        position.set(cx + (j - 2.5) * 2.5, cy + Math.sin(j * 1.7 + i) * 0.6, cz + (this.random() - 0.5) * 2);
-        const s = 1.6 + this.random() * 1.1;
-        scale.set(s * 1.7, s * (j === 2 || j === 3 ? 1.3 : 0.9), s);
+        position.set(cx + (j - 2.5) * 3.2, cy + Math.sin(j * 1.7 + i) * 0.8, cz + (this.random() - 0.5) * 2.5);
+        const s = 2.0 + this.random() * 1.4;
+        scale.set(s * 1.8, s * (j === 2 || j === 3 ? 1.4 : 0.95), s);
         matrix.compose(position, new THREE.Quaternion(), scale);
         tops.setMatrixAt(i * 6 + j, matrix);
       }
     }
+
     group.add(bases, tops);
-    group.name = 'DriftingCumulusClouds';
+    group.name = 'MajesticCumulusClouds';
     return group;
   }
 
@@ -610,7 +701,7 @@ export class EnvironmentBuilder {
       }
     });
 
-    if (this.clouds) this.clouds.rotation.y = elapsed * 0.003;
+    if (this.clouds) this.clouds.rotation.y = elapsed * 0.002;
   }
 
   public dispose(): void {

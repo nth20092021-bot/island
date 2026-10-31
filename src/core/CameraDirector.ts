@@ -10,17 +10,18 @@ export interface CameraDirectorConfig {
 }
 
 export const DEFAULT_CAMERA_CONFIG: CameraDirectorConfig = {
-  overviewPosition: new THREE.Vector3(0, 36, 68),
-  overviewLookAt: new THREE.Vector3(0, 6, 0),
-  flightDuration: 6.2
+  overviewPosition: new THREE.Vector3(0, 56, 110),
+  overviewLookAt: new THREE.Vector3(0, 10, 0),
+  flightDuration: 9.8 // 5 giây bay 1 vòng 360 độ ngắm toàn cảnh đảo hùng vĩ + 4.8 giây sà xuống rương
 };
 
 /**
- * CameraDirector: Đạo diễn camera điện ảnh mượt mà (Smooth Cinematic Camera Path)
- * - Đường bay CatmullRomCurve3 cong lượn tự nhiên theo hướng rương mục tiêu
- * - Chống giật xoay góc bằng hàm nội suy mượt mà (Smoothstep Hermite LookAt)
- * - Kiểm tra cao độ địa hình đảm bảo camera lướt êm ái trên ngọn cây/đồi cỏ mà không va chạm
- * - Không hiển thị bất kỳ đường chỉ trắng nào
+ * CameraDirector: Đạo diễn camera điện ảnh hùng vĩ (Cinematic 360 Tour & Chest Landing)
+ * 1. Giai đoạn 1: Bay lượn 1 vòng 360 độ quanh bản đồ để chiêm ngưỡng toàn cảnh đảo hùng vĩ
+ *    (thác nước đôi, con suối uốn lượn, bể đá cổ, rừng cây và bãi biển).
+ * 2. Giai đoạn 2: Lướt sà xuống theo đường cong CatmullRom mượt mà tiến thẳng về chiếc rương được chọn.
+ * 3. Nội suy góc nhìn mượt mà (Smoothstep Hermite LookAt) triệt tiêu hoàn toàn giật góc quay.
+ * 4. Không vẽ bất kỳ đường chỉ trắng nào.
  */
 export class CameraDirector {
   public camera: THREE.PerspectiveCamera;
@@ -82,7 +83,7 @@ export class CameraDirector {
   }
 
   /**
-   * Xây dựng đường bay CatmullRomCurve3 mượt mà uốn lượn tự nhiên hướng về rương
+   * Xây dựng đường bay CatmullRomCurve3 sà xuống rương
    */
   public buildCinematicPath(
     targetChest: ChestData,
@@ -91,7 +92,7 @@ export class CameraDirector {
     const points: THREE.Vector3[] = [];
     const sampler = this.heightSampler;
 
-    // Điểm xuất phát của camera
+    // Điểm tiếp nối từ vòng bay 360 độ
     const startPos = this.camera.position.clone();
     points.push(startPos);
 
@@ -101,116 +102,174 @@ export class CameraDirector {
       0,
       Math.cos(targetChest.rotationY)
     ).normalize();
+    const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
 
-    // Điểm đáp cuối cùng: Cách mặt trước rương 3.2m, góc nhìn thấp nhìn lên
+    // Điểm đáp cuối cùng: Góc nhìn 3/4 điện ảnh (chếch 32 độ nhìn xuống)
+    // Cự ly chuẩn xác 3.4m phía trước và 1.6m bên hông giúp rương chiếm trọn trung tâm khung hình
     const finalCameraPos = targetChest.position
       .clone()
-      .add(forward.clone().multiplyScalar(3.2))
-      .add(new THREE.Vector3(0, 0.45, 0));
+      .add(forward.clone().multiplyScalar(3.4))
+      .add(right.clone().multiplyScalar(1.6))
+      .add(new THREE.Vector3(0, 2.2, 0));
 
-    // Vector chỉ phương từ xuất phát đến đích
+    // Điểm neo 1: Lướt sà xuống từ tầng mây (30% chặng đường)
     const directVec = finalCameraPos.clone().sub(startPos);
-    // Vector tiếp tuyến ngang tạo vòng cung lượn mềm mại quanh hòn đảo
     const sideVec = new THREE.Vector3(-directVec.z, 0, directVec.x).normalize();
-    // Chọn hướng lượn hợp tự nhiên với góc quay của rương
     const sideSign = sideVec.dot(forward) >= 0 ? 1 : -1;
-    const arcOffset = sideVec.multiplyScalar(sideSign * 9.5);
+    const arcOffset = sideVec.multiplyScalar(sideSign * 12.0);
 
-    // Điểm neo 1: Bay sà từ trên cao lướt qua bầu trời (28% chặng đường)
-    const wp1 = startPos.clone().lerp(finalCameraPos, 0.28).add(arcOffset.clone().multiplyScalar(0.75));
+    const wp1 = startPos.clone().lerp(finalCameraPos, 0.32).add(arcOffset.clone().multiplyScalar(0.7));
     if (sampler) {
-      wp1.y = Math.max(wp1.y, sampler(wp1.x, wp1.z) + 12.0);
+      wp1.y = Math.max(wp1.y, sampler(wp1.x, wp1.z) + 14.0);
     } else {
-      wp1.y = Math.max(wp1.y, 22.0);
+      wp1.y = Math.max(wp1.y, 24.0);
     }
     points.push(wp1);
 
-    // Điểm neo 2: Lướt sà xuống trên ngọn cây và sườn đồi cỏ (62% chặng đường)
-    const wp2 = startPos.clone().lerp(finalCameraPos, 0.62).add(arcOffset.clone().multiplyScalar(0.45));
+    // Điểm neo 2: Lướt sà xuống trên ngọn cây và thung lũng suối (65% chặng đường)
+    const wp2 = startPos.clone().lerp(finalCameraPos, 0.65).add(arcOffset.clone().multiplyScalar(0.4));
     if (sampler) {
-      wp2.y = Math.max(wp2.y, sampler(wp2.x, wp2.z) + 6.0);
+      wp2.y = Math.max(wp2.y, sampler(wp2.x, wp2.z) + 7.5);
     } else {
-      wp2.y = Math.max(wp2.y, 11.0);
+      wp2.y = Math.max(wp2.y, 14.0);
     }
     points.push(wp2);
 
-    // Điểm neo 3: Tiến vào góc nhìn thẳng trước rương (82% chặng đường, cách rương 7.5m)
+    // Điểm neo 3: Tiếp cận phía trước rương theo góc 3/4 (84% chặng đường)
     const wp3 = targetChest.position
       .clone()
-      .add(forward.clone().multiplyScalar(7.5))
-      .add(new THREE.Vector3(0, 1.8, 0));
+      .add(forward.clone().multiplyScalar(6.5))
+      .add(right.clone().multiplyScalar(2.6))
+      .add(new THREE.Vector3(0, 3.2, 0));
     if (sampler) {
-      wp3.y = Math.max(wp3.y, sampler(wp3.x, wp3.z) + 1.5);
+      wp3.y = Math.max(wp3.y, sampler(wp3.x, wp3.z) + 2.0);
     }
     points.push(wp3);
 
-    // Điểm neo 4: Điểm đáp thấp trước nắp rương
+    // Điểm neo 4: Điểm đáp trước mặt rương + chống bị gò đất che khuất tầm nhìn
     if (sampler) {
-      finalCameraPos.y = Math.max(finalCameraPos.y, sampler(finalCameraPos.x, finalCameraPos.z) + 0.35);
+      const groundAtCam = sampler(finalCameraPos.x, finalCameraPos.z);
+      finalCameraPos.y = Math.max(finalCameraPos.y, groundAtCam + 1.25);
+
+      // Quét kiểm tra gò đất giữa camera và rương
+      for (const ratio of [0.3, 0.5, 0.7]) {
+        const midX = THREE.MathUtils.lerp(finalCameraPos.x, targetChest.position.x, ratio);
+        const midZ = THREE.MathUtils.lerp(finalCameraPos.z, targetChest.position.z, ratio);
+        const midGround = sampler(midX, midZ);
+        const lineY = THREE.MathUtils.lerp(finalCameraPos.y, targetChest.position.y + 0.55, ratio);
+        if (midGround > lineY - 0.35) {
+          finalCameraPos.y += (midGround - lineY + 0.6);
+        }
+      }
     }
     points.push(finalCameraPos);
 
-    // Centripetal CatmullRomCurve3 đảm bảo đường cong uốn lượn liên tục, triệt tiêu giật góc
     this.currentCurve = new THREE.CatmullRomCurve3(points, false, 'centripetal', 0.5);
     return this.currentCurve;
   }
 
   /**
-   * Bắt đầu chuyến bay điện ảnh bay tới rương chiến thắng
+   * Bắt đầu chuyến bay điện ảnh:
+   * 1. Quay hết 1 vòng 360 độ quanh bản đồ ngắm toàn cảnh hùng vĩ
+   * 2. Lướt sà xuống rương kho báu chiến thắng và mở nắp rương
    */
   public flyToChest(
     targetChest: ChestData,
     allChests: ChestData[],
     onComplete?: () => void
   ): void {
-    const curve = this.buildCinematicPath(targetChest, allChests);
     this.isFlying = true;
 
-    // Điểm nhìn mục tiêu: Ổ khóa vàng và nắp rương
-    const finalLookTarget = targetChest.position.clone().add(new THREE.Vector3(0, 0.72, 0));
+    const islandCenter = new THREE.Vector3(0, 10, 0);
+    const finalLookTarget = targetChest.position.clone().add(new THREE.Vector3(0, 0.55, 0));
+
+    // Điểm xuất phát của camera
+    const startPos = this.config.overviewPosition.clone();
+    const startAngle = Math.atan2(startPos.z, startPos.x);
+    const orbitRadius = Math.sqrt(startPos.x * startPos.x + startPos.z * startPos.z) || 110;
+    const orbitAltitude = startPos.y || 56;
+
+    // Chuẩn bị đường bay sà xuống rương (Giai đoạn 2)
+    const approachStartPos = new THREE.Vector3(
+      Math.cos(startAngle) * orbitRadius,
+      orbitAltitude,
+      Math.sin(startAngle) * orbitRadius
+    );
+    this.camera.position.copy(approachStartPos);
+    const approachCurve = this.buildCinematicPath(targetChest, allChests);
+
     const flightState = { progress: 0 };
 
     if (this.currentTween) {
       this.currentTween.kill();
     }
 
+    // Tỉ lệ thời gian: 48% vòng quay 360 độ, 52% sà xuống rương
+    const orbitThreshold = 0.48;
+
     this.currentTween = gsap.to(flightState, {
       progress: 1,
       duration: this.config.flightDuration,
-      ease: 'power2.inOut',
+      ease: 'none',
       onUpdate: () => {
         const t = flightState.progress;
 
-        // Tọa độ camera trượt mượt mà theo CatmullRomCurve3
-        const pos = curve.getPointAt(t);
-        this.camera.position.copy(pos);
+        if (t <= orbitThreshold) {
+          // ==========================================
+          // GIAI ĐOẠN 1: QUAY HẾT 1 VÒNG 360 ĐỘ QUANH ĐẢO
+          // ==========================================
+          const orbitProgress = t / orbitThreshold; // 0 -> 1
+          // Hàm easing nhẹ nhàng cho vòng quay 360
+          const easedOrbit = gsap.parseEase('power1.inOut')(orbitProgress);
 
-        // Hướng nhìn phía trước dọc theo tiếp tuyến đường bay
-        const tangent = curve.getTangentAt(Math.min(0.999, t)).normalize();
-        const aheadLook = pos.clone().add(tangent.multiplyScalar(14));
+          const angle = startAngle + easedOrbit * Math.PI * 2;
+          const r = orbitRadius + Math.sin(easedOrbit * Math.PI * 2) * 4.0;
+          const y = orbitAltitude + Math.cos(easedOrbit * Math.PI * 2) * 3.5;
 
-        // Nội suy mượt mà từ nhìn đường bay sang nhìn rương (Smoothstep Hermite Blending)
-        const blendFactor = THREE.MathUtils.smoothstep(t, 0.18, 0.88);
-        const desiredLook = aheadLook.clone().lerp(finalLookTarget, blendFactor);
-        this.currentLookAt.lerp(desiredLook, 0.12);
+          this.camera.position.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
 
-        this.camera.lookAt(this.currentLookAt);
+          // Điểm nhìn hướng vào trung tâm đảo hùng vĩ
+          this.currentLookAt.lerp(islandCenter, 0.08);
+          this.camera.lookAt(this.currentLookAt);
+
+          // Quét tia sáng lướt qua các cảnh quan trên đảo
+          const scanIndex = Math.floor(orbitProgress * allChests.length * 1.5) % allChests.length;
+          const scanningChest = allChests[scanIndex];
+          if (scanningChest) {
+            globalEventBus.emit('BEAM_SCAN_TARGET', {
+              chestId: scanningChest.id,
+              position: scanningChest.position
+            });
+          }
+        } else {
+          // ==========================================
+          // GIAI ĐOẠN 2: LƯỚT SÀ XUỐNG RƯƠNG CHIẾN THẮNG
+          // ==========================================
+          const descentProgress = (t - orbitThreshold) / (1.0 - orbitThreshold); // 0 -> 1
+          const easedDescent = gsap.parseEase('power2.inOut')(descentProgress);
+
+          const pos = approachCurve.getPointAt(easedDescent);
+          this.camera.position.copy(pos);
+
+          // Hướng nhìn phía trước dọc theo tiếp tuyến đường bay
+          const tangent = approachCurve.getTangentAt(Math.min(0.999, easedDescent)).normalize();
+          const aheadLook = pos.clone().add(tangent.multiplyScalar(14));
+
+          // Chuyển mượt mà từ nhìn đường bay sang nhìn ổ khóa rương
+          const blendFactor = THREE.MathUtils.smoothstep(easedDescent, 0.22, 0.88);
+          const desiredLook = aheadLook.clone().lerp(finalLookTarget, blendFactor);
+          this.currentLookAt.lerp(desiredLook, 0.12);
+          this.camera.lookAt(this.currentLookAt);
+
+          // Tia sáng thiên giới chiếu rọi xuống rương mục tiêu
+          globalEventBus.emit('BEAM_SCAN_TARGET', {
+            chestId: targetChest.id,
+            position: targetChest.position
+          });
+        }
 
         // Bắn sự kiện tiến trình camera
         globalEventBus.emit('CAMERA_PROGRESS', { progress: t });
-
-        // Quét tia sáng năng lượng thiên giới qua các rương
-        const scanIndex = Math.min(
-          allChests.length - 1,
-          Math.floor(t * allChests.length * 1.4) % allChests.length
-        );
-        const scanningChest = allChests[scanIndex];
-        if (scanningChest) {
-          globalEventBus.emit('BEAM_SCAN_TARGET', {
-            chestId: scanningChest.id,
-            position: scanningChest.position
-          });
-        }
       },
       onComplete: () => {
         this.isFlying = false;
@@ -222,7 +281,7 @@ export class CameraDirector {
           position: targetChest.position
         });
 
-        // Bật mở nắp rương hé lộ vàng ngọc
+        // Bật mở nắp rương hé lộ kho báu tiền vàng
         gsap.delayedCall(0.35, () => {
           globalEventBus.emit('CHEST_OPENED', {
             chestId: targetChest.id,
@@ -235,9 +294,6 @@ export class CameraDirector {
     });
   }
 
-  /**
-   * Trả về line trống vô hình để tương thích các interface cũ (không vẽ đường chỉ trắng)
-   */
   public createTrajectoryLineMesh(_curve?: THREE.CatmullRomCurve3): THREE.Line {
     const emptyGeo = new THREE.BufferGeometry();
     const invisibleMat = new THREE.LineBasicMaterial({ visible: false, transparent: true, opacity: 0 });

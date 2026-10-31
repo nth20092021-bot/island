@@ -224,30 +224,30 @@ select {
   font-size: 1.1rem;
 }
 
-/* Winner Banner */
+/* Winner Banner - Đặt ở đỉnh màn hình để không che mất rương 3D và tiền vàng */
 #winner-banner {
   position: fixed;
-  top: 50%;
+  top: 36px;
   left: 50%;
-  transform: translate(-50%, -50%) scale(1);
-  background: rgba(15, 23, 42, 0.94);
-  backdrop-filter: blur(24px);
+  transform: translateX(-50%) scale(1);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(20px);
   border: 2px solid #f59e0b;
-  border-radius: 24px;
-  padding: 32px 56px;
+  border-radius: 20px;
+  padding: 18px 42px;
   text-align: center;
   z-index: 50;
-  box-shadow: 0 0 70px rgba(245, 158, 11, 0.55);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 50px rgba(245, 158, 11, 0.4);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  gap: 6px;
+  transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 #winner-banner.hidden {
   opacity: 0;
-  transform: translate(-50%, -40%) scale(0.9);
+  transform: translateX(-50%) translateY(-30px) scale(0.92);
   pointer-events: none;
 }
 

@@ -64,9 +64,9 @@ export class EnergyBeamShader {
     this.mesh.name = 'EnergyBeam';
 
     const ringMaterial = new THREE.MeshBasicMaterial({
-      color: options.hotColor ?? 0xffffff,
+      color: 0x38bdf8,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.35,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.DoubleSide
@@ -89,9 +89,9 @@ export class EnergyBeamShader {
     this.material.uniforms.uTime.value = elapsed;
     const ringMaterial = this.shockwave.material as THREE.MeshBasicMaterial;
     const phase = (elapsed * 0.8) % 1;
-    const scale = 0.8 + phase * 4.5;
+    const scale = 0.8 + phase * 1.8;
     this.shockwave.scale.setScalar(scale);
-    ringMaterial.opacity = (1 - phase) * 0.72;
+    ringMaterial.opacity = (1 - phase) * 0.35;
     this.shockwave.rotation.z += delta * 0.8;
   }
 

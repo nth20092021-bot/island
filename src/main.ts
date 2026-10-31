@@ -71,8 +71,8 @@ class GameApp {
       0.1,
       1000
     );
-    this.camera.position.set(0, 35, 65);
-    this.camera.lookAt(0, 5, 0);
+    this.camera.position.set(0, 56, 110);
+    this.camera.lookAt(0, 10, 0);
 
     // 3. Renderer: gắn trực tiếp vào #app kích thước 100vw x 100vh
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -117,12 +117,12 @@ class GameApp {
       item.className = 'student-item';
       const zoneName =
         chest.index < 7
-          ? 'Bãi biển & Cọ'
+          ? 'Bãi biển & Cầu tàu'
           : chest.index < 14
           ? 'Thung lũng & Suối'
           : chest.index < 21
-          ? 'Rừng cây & Đồi xanh'
-          : 'Cao nguyên & Đỉnh';
+          ? 'Rừng cây & Cầu gỗ'
+          : 'Bể đá cổ & Cao nguyên';
       item.innerHTML = `<span>#${chest.id} ${chest.student.name}</span> <span style="color:#34d399;">${zoneName}</span>`;
       this.studentsPreview.appendChild(item);
     });

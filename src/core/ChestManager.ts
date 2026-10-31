@@ -33,21 +33,21 @@ export const DEFAULT_STUDENTS: Student[] = [
 ];
 
 export interface IslandConfig {
-  beachRadius: number;     // Bán kính bờ biển bãi cát ngoài cùng = 40
-  volcanoRadius: number;   // Bán kính cao nguyên đỉnh = 8.5 (giữ tên tương thích)
+  beachRadius: number;     // Bán kính bờ biển bãi cát ngoài cùng = 64m
+  volcanoRadius: number;   // Bán kính cao nguyên đỉnh = 14m
   spiralTurns: number;     // Vòng xoắn đường mòn thiên nhiên = 2.4
   totalChests: number;     // Đúng 28 rương kho báu
-  beachHeight: number;     // Độ cao bãi biển = 1.35
-  volcanoHeight: number;   // Độ cao cao nguyên đỉnh = 13.5
+  beachHeight: number;     // Độ cao bãi biển = 1.8m
+  volcanoHeight: number;   // Độ cao đài ngắm cảnh đỉnh = 22m
 }
 
 export const DEFAULT_ISLAND_CONFIG: IslandConfig = {
-  beachRadius: 40.0,
-  volcanoRadius: 8.5,
+  beachRadius: 64.0,
+  volcanoRadius: 14.0,
   spiralTurns: 2.4,
   totalChests: 28,
-  beachHeight: 1.35,
-  volcanoHeight: 13.5
+  beachHeight: 1.8,
+  volcanoHeight: 22.0
 };
 
 export type HeightSampler = (x: number, z: number) => number;
@@ -87,30 +87,30 @@ export class ChestManager {
       // t chạy đều từ 0 (bãi biển) đến 1 (đài ngắm cảnh đỉnh)
       const t = i / (count - 1);
 
-      // Tọa độ cơ sở theo đường mòn xoắn ốc xuyên rừng
+      // Tọa độ cơ sở theo đường xoắn ốc cảnh quan trên đảo lớn
       const angle = initialAngle + t * Math.PI * 4.8;
-      const radius = 39.5 - t * 31.5; // Từ r=39.5 về r=8
+      const radius = 62.0 - t * 48.0; // Phân bổ rộng khắp từ bờ biển (r=62m) tới cao nguyên bể đá cổ (r=14m)
 
       const baseX = Math.cos(angle) * radius;
       const baseZ = Math.sin(angle) * radius;
 
-      // Độ lệch nhẹ tự nhiên 2 bên đường mòn (nằm dưới bóng dừa, kề khóm hoa, cạnh tảng đá)
-      const lateralOffset = ((i % 3) - 1) * 1.35;
+      // Độ lệch nhẹ tự nhiên 2 bên đường mòn (nằm dưới bóng dừa, ven suối, cạnh tảng đá)
+      const lateralOffset = ((i % 3) - 1) * 2.2;
       const normalX = -Math.sin(angle);
       const normalZ = Math.cos(angle);
 
       const x = baseX + normalX * lateralOffset;
       const z = baseZ + normalZ * lateralOffset;
 
-      // Độ cao chuẩn xác neo sát mặt cỏ/cát
+      // Độ cao chuẩn xác neo sát mặt cỏ/cát từ hàm lấy độ cao địa hình
       const groundHeight = heightSampler
         ? heightSampler(x, z)
-        : 1.35 + Math.pow(Math.cos(THREE.MathUtils.clamp(radius / 42, 0, 1) * (Math.PI / 2)), 1.4) * 11.8;
+        : 1.5 + Math.pow(Math.cos(THREE.MathUtils.clamp(radius / 66, 0, 1) * (Math.PI / 2)), 1.35) * 19.5;
       const y = groundHeight + 0.02;
 
-      // Hướng mặt trước rương hơi nghiêng về phía lối đi để camera dễ tiếp cận ngắm nắp rương
-      const tangentX = -Math.sin(angle) * radius + Math.cos(angle) * -31.5;
-      const tangentZ = Math.cos(angle) * radius + Math.sin(angle) * -31.5;
+      // Hướng mặt trước rương hơi nghiêng về phía đường đi để camera dễ tiếp cận ngắm nắp rương
+      const tangentX = -Math.sin(angle) * radius + Math.cos(angle) * -48.0;
+      const tangentZ = Math.cos(angle) * radius + Math.sin(angle) * -48.0;
       const rotationY = Math.atan2(tangentX, tangentZ) - Math.PI / 2 + ((i % 2) - 0.5) * 0.25;
 
       const chest: ChestData = {
