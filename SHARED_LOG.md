@@ -1,1 +1,0 @@
-C:/Users/Admin/Desktop/NHAT_KY_AI_GAME.md
