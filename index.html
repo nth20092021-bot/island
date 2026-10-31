@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text></svg>">
+  <title>3D Treasure Island - Hòn Đảo Kho Báu</title>
+  <script type="module" crossorigin src="./assets/index-Dgi9ulhV.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DAmNs6Ic.css">
+</head>
+<body>
+  <!-- Vùng chứa WebGL 3D toàn màn hình -->
+  <div id="app"></div>
+
+  <!-- 1. Icon Bánh Răng cài đặt duy nhất ở góc trên bên phải -->
+  <button id="btn-settings" class="icon-btn" title="Cài đặt">⚙️</button>
+
+  <!-- Menu Cài Đặt (Popover) -->
+  <div id="settings-popover" class="popover hidden">
+    <div class="popover-header">
+      <span>Cài đặt hệ thống</span>
+      <button id="btn-close-settings" class="close-btn">&times;</button>
+    </div>
+    <div class="popover-body">
+      <div class="form-group">
+        <label for="select-chest">🎯 Chọn rương chiến thắng:</label>
+        <select id="select-chest">
+          <option value="">-- Ngẫu nhiên --</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button id="btn-reset-cam" class="btn">🔄 Reset Camera</button>
+      </div>
+
+      <div class="students-list-group">
+        <label>📋 28 Học sinh:</label>
+        <div id="students-preview" class="students-scroll"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Nút BẮT ĐẦU duy nhất ở chính giữa phía dưới màn hình -->
+  <div id="start-container">
+    <button id="btn-start" class="start-btn">
+      <span class="play-icon">▶</span>
+      <span>BẮT ĐẦU</span>
+    </button>
+  </div>
+
+  <!-- Hiệu ứng bùng nổ ánh sáng toàn màn hình khi mở rương -->
+  <div id="golden-flash" class="golden-flash"></div>
+
+  <!-- Popup Vinh danh người chiến thắng -->
+  <div id="winner-banner" class="winner-banner hidden" role="status" aria-live="polite">
+    <div class="winner-eyebrow">Vinh danh</div>
+    <div id="winner-name">Tên Học Sinh</div>
+    <div class="winner-meta">
+      <span id="winner-chest-id" class="winner-badge">Rương #00</span>
+      <span class="winner-sep"></span>
+      <span class="winner-sub">Hòn đảo kho báu</span>
+    </div>
+    <button id="btn-close-winner" class="winner-btn">Chơi lại</button>
+  </div>
+
+</body>
+</html>
