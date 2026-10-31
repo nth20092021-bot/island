@@ -1,0 +1,7 @@
+QUY TẮC ĐỒNG BỘ GIỮA ANTIGRAVITY, CODEX VÀ CLINE :
+1. TRƯỚC KHI BẮT ĐẦU MỌI TASK: Bắt buộc đọc file `SHARED_LOG.md` (nếu có quyền đọc ngoài workspace thì đọc trực tiếp `~/Desktop/NHAT_KY_AI_GAME.md`) để nắm rõ người dùng và AI kia vừa bàn bạc gì, đã sửa file nào và việc gì đang làm dở.
+2. SAU KHI SỬA CODE HOẶC TRẢ LỜI XONG: Bắt buộc ghi nối tiếp (append) một bản ghi ngắn gọn vào cuối file `SHARED_LOG.md` theo mẫu:
+   ### [Tên AI: Antigravity, Codex hoặc Cline] - [Giờ:Phút Ngày/Tháng]
+   - 💬 **Tóm tắt chat với User:** (Yêu cầu vừa nhận và hướng giải quyết đã chốt)
+   - 🛠️ **File & Hàm đã sửa:** (Liệt kê chính xác tên file, tên hàm/biến vừa thêm hoặc sửa)
+   - 📌 **Bàn giao cho AI tiếp theo (Next Step):** (Việc đang làm dở hoặc gợi ý bước kế tiếp)
