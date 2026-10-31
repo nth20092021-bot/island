@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ChestData, Student, globalEventBus } from './EventBus';
+import { ChestData, Student } from './EventBus';
 
 export const DEFAULT_STUDENTS: Student[] = [
   { id: 1, name: 'Nguyễn An Bình' },
@@ -33,26 +33,29 @@ export const DEFAULT_STUDENTS: Student[] = [
 ];
 
 export interface IslandConfig {
-  beachRadius: number;     // Bán kính vùng bãi biển (ngoài cùng)
-  volcanoRadius: number;   // Bán kính vùng đỉnh núi lửa (trung tâm)
+  beachRadius: number;     // Bán kính bãi biển (ngoài cùng) = 40
+  volcanoRadius: number;   // Bán kính miệng núi lửa = 9
+  spiralTurns: number;     // 2.4 vòng xoắn ốc
+  totalChests: number;     // Đúng 28 rương
   beachHeight: number;     // Độ cao bãi biển
   volcanoHeight: number;   // Độ cao đỉnh núi lửa
-  spiralTurns: number;     // Số vòng xoắn ốc (khoảng 2.3 - 2.8 vòng)
-  totalChests: number;     // Đúng 28 rương
 }
 
 export const DEFAULT_ISLAND_CONFIG: IslandConfig = {
-  beachRadius: 42.0,
-  volcanoRadius: 8.5,
-  beachHeight: 1.2,
-  volcanoHeight: 14.8,
+  beachRadius: 40.0,
+  volcanoRadius: 9.0,
   spiralTurns: 2.4,
-  totalChests: 28
+  totalChests: 28,
+  beachHeight: 1.0,
+  volcanoHeight: 22.0
 };
 
+export type HeightSampler = (x: number, z: number) => number;
+
 /**
- * ChestManager: Quản lý vị trí không gian 3D của 28 rương theo đường xoắn ốc tự nhiên,
- * dữ liệu học sinh tương ứng và logic chọn rương trúng thưởng.
+ * ChestManager: Quản lý vị trí không gian 3D của đúng 28 chiếc rương kho báu
+ * phân bổ dọc theo con đường mòn xoắn ốc (spiral trail) tự nhiên của đảo,
+ * neo độ cao khít với bề mặt địa hình 3D (không lơ lửng, không chìm vào đá).
  */
 export class ChestManager {
   private chests: ChestData[] = [];
@@ -64,48 +67,41 @@ export class ChestManager {
   }
 
   /**
-   * Tạo 28 vị trí rương theo đường xoắn ốc tự nhiên từ bãi biển lên đỉnh núi lửa
+   * Tạo 28 vị trí rương dọc theo con đường mòn xoắn ốc của đảo
+   * @param customStudents Danh sách học sinh tùy chọn (mặc định 28 học sinh Việt Nam)
+   * @param heightSampler Hàm lấy độ cao địa hình từ GraphicsEngine / EnvironmentBuilder
    */
-  public generateChests(customStudents?: Student[]): ChestData[] {
+  public generateChests(customStudents?: Student[], heightSampler?: HeightSampler): ChestData[] {
     const students = customStudents && customStudents.length >= this.config.totalChests
       ? customStudents.slice(0, this.config.totalChests)
       : DEFAULT_STUDENTS;
 
     this.chests = [];
     const count = this.config.totalChests;
-    const initialAngleOffset = -Math.PI / 4;
+    const initialAngle = -Math.PI / 4;
 
     for (let i = 0; i < count; i++) {
-      // t chạy từ 0 (bãi biển ngoài cùng) đến 1 (đỉnh núi lửa)
+      // t chạy đều từ 0 (bãi biển) đến 1 (đỉnh núi lửa)
       const t = i / (count - 1);
 
-      // Góc quay theo số vòng xoắn ốc
-      const angle = initialAngleOffset + t * this.config.spiralTurns * Math.PI * 2;
+      // Công thức đường mòn xoắn ốc đồng bộ với createSpiralTrail() của EnvironmentBuilder
+      const angle = initialAngle + t * Math.PI * 4.8;
+      const radius = 40 - t * 31; // Từ r=40 về r=9
 
-      // Bán kính giảm dần theo dạng mũ nhẹ
-      const radius = THREE.MathUtils.lerp(
-        this.config.beachRadius,
-        this.config.volcanoRadius,
-        Math.pow(t, 0.9)
-      );
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
 
-      // Độ cao nâng dần (sườn núi dốc dần về đỉnh)
-      const height = THREE.MathUtils.lerp(
-        this.config.beachHeight,
-        this.config.volcanoHeight,
-        Math.pow(t, 1.25)
-      );
+      // Lấy độ cao chuẩn xác từ hàm địa hình Procedural Noise của đảo
+      const groundHeight = heightSampler ? heightSampler(x, z) : 1.35 + (1 - radius / 44) * 12.7;
+      const y = groundHeight + 0.02; // Đặt rương khít ngay trên mặt đất
 
-      // Tọa độ X, Z theo đường xoắn + chút biến thiên tự nhiên có kiểm soát
-      const jitterX = (Math.sin(i * 3.7) * 0.4);
-      const jitterZ = (Math.cos(i * 4.3) * 0.4);
-
-      const x = Math.cos(angle) * radius + jitterX;
-      const z = Math.sin(angle) * radius + jitterZ;
-      const y = height;
-
-      // Góc xoay mặt rương hướng ra phía đường đi hoặc hơi hướng ra ngoài
-      const rotationY = Math.atan2(x, z) + Math.PI;
+      // Hướng mặt trước của rương hơi quay ra phía đường mòn để camera tiếp cận dễ thấy nắp
+      const nextT = Math.min(1, t + 0.02);
+      const nextAngle = initialAngle + nextT * Math.PI * 4.8;
+      const nextR = 40 - nextT * 31;
+      const dirX = Math.cos(nextAngle) * nextR - x;
+      const dirZ = Math.sin(nextAngle) * nextR - z;
+      const rotationY = Math.atan2(dirX, dirZ) - Math.PI / 2;
 
       const chest: ChestData = {
         id: students[i].id,
@@ -123,28 +119,27 @@ export class ChestManager {
   }
 
   /**
-   * Lấy danh sách toàn bộ 28 rương
+   * Cập nhật lại cao độ của 28 rương theo địa hình sau khi GraphicsEngine đã khởi tạo xong
    */
+  public updateElevations(heightSampler: HeightSampler): void {
+    this.chests.forEach((chest) => {
+      chest.position.y = heightSampler(chest.position.x, chest.position.z) + 0.02;
+    });
+  }
+
   public getAllChests(): ChestData[] {
     return this.chests;
   }
 
-  /**
-   * Lấy dữ liệu rương theo id hoặc index
-   */
   public getChest(idOrIndex: number): ChestData | undefined {
     return this.chests.find((c) => c.id === idOrIndex || c.index === idOrIndex);
   }
 
-  /**
-   * Chọn 1 rương chiến thắng (ngẫu nhiên hoặc chỉ định cụ thể)
-   */
   public selectWinner(specifiedIndexOrId?: number): ChestData {
     if (this.chests.length === 0) {
       this.generateChests();
     }
 
-    // Reset trạng thái winner trước đó
     this.chests.forEach((c) => {
       c.isWinner = false;
     });
@@ -167,4 +162,3 @@ export class ChestManager {
     return this.winningChest;
   }
 }
-

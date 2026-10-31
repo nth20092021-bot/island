@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ChestManager } from './core/ChestManager';
 import { CameraDirector } from './core/CameraDirector';
-import { IslandGraphicsEngine } from './graphics/IslandGraphicsEngine';
+import { GraphicsEngine } from './graphics/GraphicsEngine';
 import { globalEventBus, Student, ChestData } from './core/EventBus';
 
 class GameApp {
@@ -12,7 +12,7 @@ class GameApp {
 
   private chestManager!: ChestManager;
   private cameraDirector!: CameraDirector;
-  private graphicsEngine!: IslandGraphicsEngine;
+  private graphicsEngine!: GraphicsEngine;
   private allChests: ChestData[] = [];
   private showTrajectory: boolean = true;
 
@@ -90,22 +90,20 @@ class GameApp {
   }
 
   private initCore(): void {
-    // 1. Quản lý 28 rương
+    // 1. Khởi tạo Đồ họa Đảo Low-Poly do Codex xây dựng
+    this.graphicsEngine = new GraphicsEngine();
+    const heightSampler = (x: number, z: number) => this.graphicsEngine.getTerrainHeightAt(x, z);
+
+    // 2. Quản lý 28 rương: Phân bổ dọc con đường mòn xoắn ốc và neo sát mặt đất
     this.chestManager = new ChestManager();
-    this.allChests = this.chestManager.generateChests();
+    this.allChests = this.chestManager.generateChests(undefined, heightSampler);
 
-    // 2. Khởi tạo Đồ họa Đảo Low-Poly do Codex xây dựng
-    this.graphicsEngine = new IslandGraphicsEngine();
-
-    // Tự động neo độ cao rương khớp hoàn hảo mặt địa hình procedural của Codex
-    this.allChests.forEach((c) => {
-      c.position.y = this.graphicsEngine.getTerrainHeightAt(c.position.x, c.position.z) + 0.05;
-    });
-
+    // 3. Khởi tạo Graphics với dữ liệu rương chuẩn hóa
     this.graphicsEngine.init(this.scene, this.camera, this.renderer, this.allChests);
 
-    // 3. Đạo diễn Camera
+    // 4. Đạo diễn Camera: Tích hợp hàm kiểm tra cao độ địa hình để chống va chạm vách đá
     this.cameraDirector = new CameraDirector(this.camera);
+    this.cameraDirector.setHeightSampler(heightSampler);
 
     // 4. Nạp dữ liệu 28 học sinh vào Popover cài đặt
     this.allChests.forEach((chest) => {
