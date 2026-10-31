@@ -54,9 +54,8 @@ export class EnvironmentBuilder {
     this.root.add(this.createOcean());
     this.root.add(this.createSeaCliffs());
 
-    // 2. Bề mặt địa hình đồi cỏ đa tầng sinh thái & Con đường mòn tự nhiên
+    // 2. Bề mặt địa hình đồi cỏ đa tầng sinh thái
     this.root.add(this.createTerrainSurface());
-    this.root.add(this.createScenicTrail());
 
     // 3. Công trình & Điểm nhấn cảnh quan
     this.root.add(this.createPier());
@@ -130,8 +129,7 @@ export class EnvironmentBuilder {
    */
   private createOcean(): THREE.Mesh {
     const g = this.geo(new THREE.CircleGeometry(210, 128));
-    // Extra subdivisions allow displacement without changing the coastline silhouette.
-    // Ripple detail is handled in the fragment shader for the large ocean surface.
+    // The ocean reaches beyond the clouds; fine ripples are shaded per fragment.
     g.rotateX(-Math.PI / 2);
     const m = new THREE.ShaderMaterial({
       vertexShader: waterVertexShader,

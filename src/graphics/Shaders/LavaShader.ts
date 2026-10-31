@@ -23,15 +23,15 @@ export const streamFragmentShader = /* glsl */ `
   uniform float uTime;
 
   void main() {
-    // Dòng suối trong vắt với bọt nước trắng xoá chảy xiết
-    float flow = fract(vUv.y * 3.5 - uTime * 1.8);
-    float foam = smoothstep(0.4, 0.85, sin(vUv.x * 16.0 + flow * 12.0) * 0.5 + 0.5);
-
-    vec3 waterClean = vec3(0.12, 0.88, 0.82); // Xanh ngọc suối nguồn
-    vec3 foamWhite = vec3(0.95, 1.0, 1.0);     // Bọt thác trắng xoá
-
-    vec3 color = mix(waterClean, foamWhite, foam * 0.55);
-    gl_FragColor = vec4(color, 0.88);
+    float flow = vUv.y * 14.0 - uTime * 3.0;
+    float ribbons = sin(flow + sin(vUv.x * 18.0 + uTime) * 1.4);
+    float sparkle = sin(flow * 2.7 - vUv.x * 28.0) * sin(vUv.x * 12.0 + uTime * 1.5);
+    float foam = smoothstep(0.28, 0.85, ribbons * 0.5 + sparkle * 0.25 + 0.5);
+    float banks = smoothstep(0.72, 0.98, abs(vUv.x - 0.5) * 2.0);
+    vec3 color = mix(vec3(0.055, 0.42, 0.53), vec3(0.79, 0.96, 0.94), foam * 0.72 + banks * 0.16);
+    gl_FragColor = vec4(color, 0.91);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
   }
 `;
 

@@ -14,7 +14,6 @@ class GameApp {
   private cameraDirector!: CameraDirector;
   private graphicsEngine!: GraphicsEngine;
   private allChests: ChestData[] = [];
-  private showTrajectory: boolean = true;
 
   // Ultra-Minimalist UI Elements
   private btnStart!: HTMLButtonElement;
@@ -23,7 +22,6 @@ class GameApp {
   private settingsPopover!: HTMLElement;
   private btnCloseSettings!: HTMLButtonElement;
   private selectChest!: HTMLSelectElement;
-  private toggleTrajectory!: HTMLInputElement;
   private btnResetCam!: HTMLButtonElement;
   private studentsPreview!: HTMLElement;
   private winnerBanner!: HTMLElement;
@@ -50,7 +48,6 @@ class GameApp {
     this.settingsPopover = document.getElementById('settings-popover') as HTMLElement;
     this.btnCloseSettings = document.getElementById('btn-close-settings') as HTMLButtonElement;
     this.selectChest = document.getElementById('select-chest') as HTMLSelectElement;
-    this.toggleTrajectory = document.getElementById('toggle-trajectory') as HTMLInputElement;
     this.btnResetCam = document.getElementById('btn-reset-cam') as HTMLButtonElement;
     this.studentsPreview = document.getElementById('students-preview') as HTMLElement;
     this.winnerBanner = document.getElementById('winner-banner') as HTMLElement;
@@ -174,13 +171,7 @@ class GameApp {
       this.settingsPopover.classList.add('hidden');
     });
 
-    // 4. Bật/Tắt đường ray CatmullRom debug
-    this.toggleTrajectory.addEventListener('change', (e) => {
-      this.showTrajectory = (e.target as HTMLInputElement).checked;
-      this.graphicsEngine.setTrajectoryVisible(this.showTrajectory);
-    });
-
-    // 5. Nút Tiếp tục / Chơi lại ở Winner Banner
+    // 4. Nút Tiếp tục / Chơi lại ở Winner Banner
     this.btnCloseWinner.addEventListener('click', () => {
       this.winnerBanner.classList.add('hidden');
       this.cameraDirector.resetToOverview(false);
@@ -202,11 +193,7 @@ class GameApp {
     const students: Student[] = this.allChests.map((c) => c.student);
     globalEventBus.emit('GAME_START', { students });
 
-    const curve = this.cameraDirector.buildCinematicPath(winnerChest, this.allChests);
-    const lineMesh = this.cameraDirector.createTrajectoryLineMesh(curve);
-    lineMesh.visible = this.showTrajectory;
-    this.graphicsEngine.setTrajectoryLine(lineMesh);
-
+    // Hoạt ảnh bay mượt mà không có bất kỳ đường chỉ trắng nào
     this.cameraDirector.flyToChest(winnerChest, this.allChests);
   }
 
