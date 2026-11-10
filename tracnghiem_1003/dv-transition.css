@@ -1,0 +1,164 @@
+/* Lớp chuyển cảnh dùng chung giữa Hòn Đảo Kho Báu và Giải Mã Ký Ức */
+.dv-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.34s ease;
+  font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #fff3cf;
+}
+
+.dv-wipe.is-on {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.dv-wipe.is-visible {
+  opacity: 1;
+}
+
+.dv-wipe__bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 44%, #57110d 0%, #3d0b09 44%, #1c0605 100%);
+}
+
+.dv-wipe__bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-radial-gradient(circle at 50% 50%,
+    rgba(240, 208, 138, 0.06) 0 1px, transparent 1px 46px);
+  opacity: 0.9;
+}
+
+.dv-wipe__bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 46%, rgba(0, 0, 0, 0.38) 100%);
+  box-shadow: inset 0 0 180px rgba(0, 0, 0, 0.72);
+}
+
+.dv-wipe__frame {
+  position: absolute;
+  inset: clamp(10px, 2.6vmin, 30px);
+  border: 1px solid rgba(240, 208, 138, 0.16);
+  opacity: 0.75;
+  background:
+    linear-gradient(#e8c987, #e8c987) left top / 32px 2px no-repeat,
+    linear-gradient(#e8c987, #e8c987) left top / 2px 32px no-repeat,
+    linear-gradient(#e8c987, #e8c987) right top / 32px 2px no-repeat,
+    linear-gradient(#e8c987, #e8c987) right top / 2px 32px no-repeat,
+    linear-gradient(#e8c987, #e8c987) left bottom / 32px 2px no-repeat,
+    linear-gradient(#e8c987, #e8c987) left bottom / 2px 32px no-repeat,
+    linear-gradient(#e8c987, #e8c987) right bottom / 32px 2px no-repeat,
+    linear-gradient(#e8c987, #e8c987) right bottom / 2px 32px no-repeat;
+}
+
+.dv-wipe__stage {
+  position: relative;
+  width: min(62vmin, 520px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  transition: transform 0.6s cubic-bezier(0.22, 0.7, 0.3, 1);
+}
+
+.dv-wipe__stage::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(240, 208, 138, 0.2), rgba(240, 208, 138, 0.06) 46%, transparent 72%);
+  filter: blur(4px);
+}
+
+.dv-wipe__ring {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.dv-wipe__ring--outer {
+  inset: 0;
+  border: 1px dashed rgba(240, 208, 138, 0.4);
+  animation: dvSpin 18s linear infinite;
+}
+
+.dv-wipe__ring--outer::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(240, 208, 138, 0.55) 0 0.5deg, transparent 0.5deg 6deg);
+  -webkit-mask: radial-gradient(circle, transparent 63%, #000 64% 69%, transparent 70%);
+  mask: radial-gradient(circle, transparent 63%, #000 64% 69%, transparent 70%);
+  opacity: 0.6;
+}
+
+.dv-wipe__ring--inner {
+  inset: 13%;
+  border: 1px solid rgba(240, 208, 138, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(240, 208, 138, 0.08), 0 0 46px rgba(240, 208, 138, 0.12);
+  animation: dvSpin 11s linear infinite reverse;
+}
+
+.dv-wipe__core {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(9px) scale(0.98);
+  transition: opacity 0.42s ease 0.05s, transform 0.55s cubic-bezier(0.22, 0.7, 0.3, 1) 0.05s;
+}
+
+.dv-wipe.is-visible .dv-wipe__core {
+  opacity: 1;
+  transform: none;
+}
+
+.dv-wipe__icon {
+  font-size: clamp(2.1rem, 4.6vmin, 3.1rem);
+  line-height: 1;
+  filter: drop-shadow(0 0 20px rgba(240, 208, 138, 0.55));
+}
+
+.dv-wipe__kicker {
+  font-size: clamp(0.6rem, 1.1vmin, 0.72rem);
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: rgba(240, 208, 138, 0.85);
+  padding-left: 0.42em;
+}
+
+.dv-wipe__title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(1.5rem, 3.5vmin, 2.2rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 30px rgba(240, 208, 138, 0.28);
+}
+
+.dv-wipe__sub {
+  font-size: clamp(0.72rem, 1.35vmin, 0.86rem);
+  color: rgba(255, 243, 207, 0.6);
+}
+
+@keyframes dvSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-wipe__ring { animation: none; }
+  .dv-wipe__stage { transition-duration: 0.12s; }
+  .dv-wipe__core { transition-duration: 0.12s; }
+}

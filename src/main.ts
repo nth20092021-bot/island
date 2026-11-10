@@ -312,7 +312,10 @@ class GameApp {
     if (studentName) url.searchParams.set('student', studentName);
     if (used) url.searchParams.set('used', used);
 
-    window.location.href = url.toString();
+    const target = url.toString();
+    const exit = (window as unknown as { __islandExitToQuiz?: (u: string) => void }).__islandExitToQuiz;
+    if (typeof exit === 'function') exit(target);
+    else window.location.href = target;
   }
 
   private initGameEvents(): void {

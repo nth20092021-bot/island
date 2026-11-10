@@ -2112,6 +2112,7 @@
       * { transition-duration: 0.01ms !important; }
     }
   </style>
+  <link rel="stylesheet" href="dv-transition.css" />
 </head>
 <body>
   <!-- Khuôn cắt mảnh ghép: 3 mảnh khác nhau, phóng theo kích thước thẻ -->
@@ -2335,6 +2336,22 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <div class="dv-wipe" id="dvWipe" aria-hidden="true">
+    <div class="dv-wipe__bg"></div>
+    <div class="dv-wipe__frame"></div>
+    <div class="dv-wipe__stage">
+      <span class="dv-wipe__ring dv-wipe__ring--outer"></span>
+      <span class="dv-wipe__ring dv-wipe__ring--inner"></span>
+      <div class="dv-wipe__core">
+        <span class="dv-wipe__icon">🏝️</span>
+        <span class="dv-wipe__kicker">Hòn đảo kho báu</span>
+        <span class="dv-wipe__title">Trở về đảo</span>
+        <span class="dv-wipe__sub">Rương báu đang chờ bạn</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="dv-transition.js"></script>
   <script src="vendor/gsap.min.js"></script>
   <script>
     /* =====================================================================
