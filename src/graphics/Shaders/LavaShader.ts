@@ -90,19 +90,19 @@ export const streamFragmentShader = /* glsl */ `
     float foam = clamp(bank * (0.30 + streak * 0.5) + crest * (0.14 + uFoam * 0.30)
                      + plunge * 0.34 + fall * veil * (0.30 + uFoam * 0.55), 0.0, 1.0);
 
-    vec3 deep = vec3(0.022, 0.155, 0.195);
-    vec3 mid = vec3(0.055, 0.33, 0.375);
+    vec3 deep = vec3(0.018, 0.100, 0.125);
+    vec3 mid = vec3(0.040, 0.230, 0.245);
     vec3 color = mix(deep, mid, smoothstep(-1.2, 1.8, h0));
-    color = mix(color, vec3(0.14, 0.48, 0.50), uRadial * 0.6);
+    color = mix(color, vec3(0.085, 0.330, 0.345), uRadial * 0.6);
     // Thân thác chỉ trắng ở các cột bọt, phần giữa vẫn còn sắc ngọc để nhìn ra khối nước.
-    color = mix(color, vec3(0.82, 0.93, 0.95), uWhiteness * (0.22 + streak * 0.22 + veil * 0.62));
-    color = mix(color, vec3(0.90, 0.98, 0.98), foam * 0.8);
+    color = mix(color, vec3(0.78, 0.82, 0.745), uWhiteness * (0.22 + streak * 0.22 + veil * 0.62));
+    color = mix(color, vec3(0.90, 0.87, 0.74), foam * 0.72);
 
     vec3 viewDir = normalize(cameraPosition - vWorld);
     float fresnel = pow(1.0 - abs(dot(normal, viewDir)), 3.0);
-    color = mix(color, vec3(0.63, 0.80, 0.91), fresnel * 0.26);
+    color = mix(color, vec3(0.30, 0.17, 0.085), fresnel * 0.26);
     float glint = pow(max(dot(reflect(-normalize(uSunDirection), normal), viewDir), 0.0), 80.0);
-    color += vec3(1.0, 0.94, 0.80) * glint * 0.5 * (1.0 - foam);
+    color += vec3(1.0, 0.82, 0.55) * glint * 0.5 * (1.0 - foam);
 
     float alpha = mix(0.93, 0.985, 1.0 - bank) + foam * 0.015;
     // Vạt thác tan thành bụi nước: hai bên mép không còn là đường cắt thẳng của một tấm bảng.

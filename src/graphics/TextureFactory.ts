@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 
-export type TextureMode = 'sand' | 'rock' | 'wood' | 'chestWood' | 'metal' | 'grass';
+export type TextureMode =
+  | 'sand' | 'rock' | 'wood' | 'chestWood' | 'metal' | 'grass'
+  | 'limWood' | 'lacquer' | 'patina' | 'roofTile' | 'laterite' | 'brick';
+
+const smoothstep = (a: number, b: number, x: number): number => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
 
 function hash(x: number, y: number, seed: number): number {
   let n = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(seed, 1442695041);
@@ -54,7 +61,101 @@ function surface(mode: TextureMode, x: number, y: number, size: number): { color
     const blades = Math.sin(u * Math.PI * 96 + detail * 3) * Math.sin(v * Math.PI * 72);
     const t = broad * 0.25 + detail * 0.24 + blades * 0.06;
     // Pale albedo preserves vertex biome colors instead of multiplying green by green.
-    return { color: [190 + t * 52, 202 + t * 44, 167 + t * 52], height: t + grain * 0.1, roughness: 0.86 + detail * 0.1 };
+    return { color: [160 + t * 52, 174 + t * 44, 132 + t * 50], height: t + grain * 0.1, roughness: 0.86 + detail * 0.1 };
+  }
+  if (mode === 'limWood') {
+    // Gỗ lim đỏ sẫm, vân mịn và thẳng: cột đình chạm khắc cần mặt gỗ đanh chứ không thô như gỗ rương.
+    const lines = Math.sin(v * Math.PI * 112 + broad * 2.4 + Math.sin(u * Math.PI * 5) * 0.5);
+    const fine = noise(u * 96, v * 26, 96, 31);
+    const t = broad * 0.2 + fine * 0.26 + lines * 0.05;
+    return { color: [62 + t * 74, 34 + t * 48, 24 + t * 34], height: t + lines * 0.08, roughness: 0.5 + fine * 0.2 };
+  }
+  if (mode === 'lacquer') {
+    // Sơn mài đỏ son: nền sâu, vệt quầng sáng mờ như lớp sơn then được đánh bóng.
+    const swirl = noise(u * 6 + Math.sin(v * 7) * 0.45, v * 6, 6, 77);
+    const shine = noise(u * 20, v * 20, 20, 13);
+    const t = swirl * 0.45 + shine * 0.18;
+    return {
+      color: [104 + t * 74, 15 + t * 24, 13 + t * 20],
+      height: t * 0.2,
+      roughness: 0.16 + shine * 0.14 + (1 - swirl) * 0.12
+    };
+  }
+  if (mode === 'patina') {
+    // Đồng thau lên ten xanh: mảng gỉ ngọc bám trên nền đồng nâu, mép gỉ sần và nhám.
+    const blotch = noise(u * 7 + Math.sin(v * 5) * 0.6, v * 7, 7, 91);
+    const crust = noise(u * 26, v * 26, 26, 57);
+    const verdigris = smoothstep(0.36, 0.7, blotch * 0.72 + crust * 0.28);
+    const bronze = [104 + detail * 46, 70 + detail * 30, 34 + detail * 18];
+    const green = [46 + detail * 34, 96 + detail * 40, 76 + detail * 30];
+    return {
+      color: [
+        bronze[0] + (green[0] - bronze[0]) * verdigris,
+        bronze[1] + (green[1] - bronze[1]) * verdigris,
+        bronze[2] + (green[2] - bronze[2]) * verdigris
+      ],
+      height: verdigris * 0.7 + crust * 0.22,
+      roughness: 0.34 + verdigris * 0.42 + detail * 0.1
+    };
+  }
+  if (mode === 'roofTile') {
+    // Ngói âm dương: 8 dải sóng dọc mái, mỗi hàng ngói chồng lên nhau một gờ tối.
+    const strip = u * 8;
+    const s = strip - Math.floor(strip);
+    const profile = Math.sin(s * Math.PI);
+    const row = v * 10;
+    const seam = Math.pow(Math.abs(Math.cos(row * Math.PI)), 34);
+    const t = broad * 0.2 + detail * 0.18;
+    const bright = Math.pow(profile, 1.4);
+    const shade = 1 - seam * 0.52;
+    // Ngói âm dương nung xám chì, hơi ngả lam khi lên rêu — không phải ngói đất nung đỏ.
+    const moss = smoothstep(0.62, 0.86, broad);
+    return {
+      color: [
+        (64 + bright * 40 + t * 14 - moss * 6) * shade,
+        (72 + bright * 42 + t * 14 + moss * 10) * shade,
+        (80 + bright * 44 + t * 16 + moss * 2) * shade
+      ],
+      height: profile * 0.85 - seam * 0.55 + t * 0.15,
+      roughness: 0.58 + detail * 0.16 + seam * 0.18
+    };
+  }
+  if (mode === 'laterite') {
+    // Đá ong: khối đất nung xốp, lỗ rỗ dày đặc và sắc cam gỉ.
+    const pores = noise(u * 34, v * 34, 34, 17);
+    const hole = smoothstep(0.6, 0.82, pores);
+    const t = broad * 0.42 + detail * 0.3;
+    return {
+      color: [
+        (132 + t * 44) * (1 - hole * 0.46),
+        (86 + t * 32) * (1 - hole * 0.42),
+        (62 + t * 26) * (1 - hole * 0.4)
+      ],
+      height: t - hole * 0.95,
+      roughness: 0.82 + detail * 0.14
+    };
+  }
+  if (mode === 'brick') {
+    // Sân gạch Bắc Bộ: gạch đỏ nung xếp so le, mạch vữa xám lõm sâu.
+    const rows = 8;
+    const row = v * rows;
+    const rowIndex = Math.floor(row);
+    const offset = (rowIndex % 2) * 0.5;
+    const col = u * 4 + offset;
+    const colIndex = Math.floor(col);
+    const fx = col - colIndex, fy = row - rowIndex;
+    const joint = 1 - smoothstep(0.015, 0.085, Math.min(Math.min(fx, 1 - fx), Math.min(fy, 1 - fy)));
+    const brickTint = hash(colIndex, rowIndex, 61) * 34;
+    const t = broad * 0.18 + detail * 0.16;
+    return {
+      color: [
+        (112 + t * 38 + brickTint * 0.8) * (1 - joint * 0.42),
+        (72 + t * 26 + brickTint * 0.5) * (1 - joint * 0.34),
+        (56 + t * 20 + brickTint * 0.35) * (1 - joint * 0.3)
+      ],
+      height: (1 - joint) * 0.35 - joint * 0.6,
+      roughness: 0.78 + detail * 0.14 + joint * 0.08
+    };
   }
   const brushed = Math.sin(v * Math.PI * 96) * 0.05 + grain * 0.08;
   return { color: [202 + broad * 36 + brushed * 25, 148 + broad * 36 + brushed * 20, 54 + broad * 27], height: brushed + detail * 0.12, roughness: 0.32 + broad * 0.18 };
@@ -82,7 +183,9 @@ export function makePbrSet(mode: TextureMode): {
     const rv = clamp(s.roughness * 255);
     ri.data[o] = ri.data[o + 1] = ri.data[o + 2] = rv; ri.data[o + 3] = 255;
   }
-  const strength = mode === 'rock' ? 2.2 : mode === 'sand' ? 1.2 : 1.5;
+  const strength = mode === 'rock' ? 2.2 : mode === 'sand' ? 1.2
+    : mode === 'roofTile' ? 2.0 : mode === 'laterite' ? 2.6 : mode === 'brick' ? 2.2
+    : mode === 'patina' ? 1.8 : mode === 'lacquer' ? 0.8 : 1.5;
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const o = (y * size + x) * 4;
     const dx = (heights[y * size + (x + 1) % size] - heights[y * size + (x + size - 1) % size]) * strength;
@@ -156,6 +259,70 @@ export function rockMaterial(store: Array<THREE.Material | THREE.Texture>): THRE
   return m;
 }
 
+function vietMaterial(
+  store: Array<THREE.Material | THREE.Texture>,
+  mode: TextureMode,
+  options: THREE.MeshStandardMaterialParameters,
+  repeat?: [number, number]
+): THREE.MeshStandardMaterial {
+  const p = makePbrSet(mode);
+  if (repeat) for (const texture of Object.values(p)) texture.repeat.set(repeat[0], repeat[1]);
+  const m = new THREE.MeshStandardMaterial({
+    map: p.map,
+    roughnessMap: p.roughnessMap,
+    normalMap: p.normalMap,
+    roughness: 1,
+    ...options
+  });
+  store.push(m, p.map, p.roughnessMap, p.normalMap);
+  return m;
+}
+
+/** Gỗ lim đỏ sẫm vân mịn — cột, xà và ván đình làng. */
+export function limWoodMaterial(store: Array<THREE.Material | THREE.Texture>): THREE.MeshStandardMaterial {
+  return vietMaterial(store, 'limWood', {
+    normalScale: new THREE.Vector2(0.4, 0.4)
+  }, [1.4, 1.4]);
+}
+
+/** Sơn mài đỏ son đánh bóng — vách đình, hoành phi, cột tháp chuông. */
+export function lacquerMaterial(store: Array<THREE.Material | THREE.Texture>): THREE.MeshStandardMaterial {
+  return vietMaterial(store, 'lacquer', {
+    metalness: 0.06,
+    normalScale: new THREE.Vector2(0.18, 0.18)
+  });
+}
+
+/** Đồng thau lên ten xanh — chuông, đỉnh đồng và mắt rồng. */
+export function patinaMaterial(store: Array<THREE.Material | THREE.Texture>): THREE.MeshStandardMaterial {
+  return vietMaterial(store, 'patina', {
+    metalness: 0.82,
+    normalScale: new THREE.Vector2(0.7, 0.7)
+  });
+}
+
+/** Ngói âm dương — mái đình, tam quan, tháp chuông và cầu ngói. */
+export function roofTileMaterial(store: Array<THREE.Material | THREE.Texture>): THREE.MeshStandardMaterial {
+  return vietMaterial(store, 'roofTile', {
+    normalScale: new THREE.Vector2(1.0, 1.0),
+    side: THREE.DoubleSide
+  });
+}
+
+/** Đá ong xốp màu gỉ sắt — móng đình, bậc cấp, viền ao sen và tường ruộng bậc thang. */
+export function lateriteMaterial(store: Array<THREE.Material | THREE.Texture>): THREE.MeshStandardMaterial {
+  return vietMaterial(store, 'laterite', {
+    normalScale: new THREE.Vector2(0.85, 0.85)
+  }, [2, 2]);
+}
+
+/** Sân gạch đỏ nung xếp so le. */
+export function brickMaterial(store: Array<THREE.Material | THREE.Texture>): THREE.MeshStandardMaterial {
+  return vietMaterial(store, 'brick', {
+    normalScale: new THREE.Vector2(0.55, 0.55)
+  }, [6, 4]);
+}
+
 /**
  * Sprites bụi nước: PointsMaterial không có map sẽ vẽ ô vuông trắng,
  * nên cần một vệt tròn mờ để hơi nước tan vào không khí.
@@ -191,18 +358,19 @@ export function skyEnvironment(): THREE.CanvasTexture {
   const ctx = canvas.getContext('2d')!;
 
   const sky = ctx.createLinearGradient(0, 0, 0, height);
-  sky.addColorStop(0, '#1f5fbf');
-  sky.addColorStop(0.42, '#9cc4e8');
-  sky.addColorStop(0.5, '#e9f2f6');
-  sky.addColorStop(0.58, '#8fae74');
-  sky.addColorStop(1, '#3d5738');
+  sky.addColorStop(0, '#101a33');
+  sky.addColorStop(0.32, '#2c3c58');
+  sky.addColorStop(0.47, '#a8663a');
+  sky.addColorStop(0.53, '#8a5535');
+  sky.addColorStop(0.62, '#55432f');
+  sky.addColorStop(1, '#241f1a');
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, width, height);
 
   // Vệt nắng rực để kim loại có một điểm sáng phản chiếu rõ ràng
-  const sun = ctx.createRadialGradient(width * 0.27, height * 0.28, 0, width * 0.27, height * 0.28, width * 0.17);
-  sun.addColorStop(0, 'rgba(255,252,238,1)');
-  sun.addColorStop(1, 'rgba(255,244,214,0)');
+  const sun = ctx.createRadialGradient(width * 0.27, height * 0.36, 0, width * 0.27, height * 0.36, width * 0.2);
+  sun.addColorStop(0, 'rgba(255,240,208,1)');
+  sun.addColorStop(1, 'rgba(255,198,130,0)');
   ctx.fillStyle = sun;
   ctx.fillRect(0, 0, width, height);
 

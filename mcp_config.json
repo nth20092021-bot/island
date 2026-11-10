@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "THAY_BANG_GITHUB_PAT_CUA_BAN"
+      }
+    },
     "threejs-devtools": {
       "command": "npx",
       "args": ["-y", "threejs-devtools-mcp"]
@@ -25,7 +32,7 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "C:\\Users\\Admin\\Documents\\gametest_1003"
+        "D:\\Lưu trữ\\projet\\gametest_1003"
       ]
     },
     "git": {
@@ -33,7 +40,7 @@
       "args": [
         "mcp-server-git",
         "--repository",
-        "C:\\Users\\Admin\\Documents\\gametest_1003"
+        "D:\\Lưu trữ\\projet\\gametest_1003"
       ]
     },
     "sequential-thinking": {

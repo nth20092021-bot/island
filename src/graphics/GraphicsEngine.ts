@@ -7,6 +7,29 @@ import { TreasureChestBuilder } from './TreasureChestBuilder';
 import { skyEnvironment } from './TextureFactory';
 import { skyVertexShader, skyFragmentShader } from './Shaders/SkyShader';
 
+/** Các khối đặc camera phải né khi bay xuống rương (bỏ qua mặt nước, mây, hiệu ứng). */
+const CAMERA_OBSTACLE_NAMES = new Set([
+  'IslandSeaCliffs',
+  'SummitAltar',
+  'SummitBackdrop',
+  'GrandWaterfalls',
+  'RiverStones',
+  'RiceTerraces',
+  'VietVillage',
+  'CoveredBridge',
+  'OceanPier',
+  'CurvedCoconutPalms',
+  'ArecaPalms',
+  'BananaGarden',
+  'BambooGroves',
+  'BanyanTrees',
+  'CanopyForest',
+  'HighlandTrees',
+  'TropicalShrubs',
+  'MossyBoulders',
+  'CoastalStoneMonuments'
+]);
+
 /**
  * GraphicsEngine: Động cơ đồ họa hòn đảo thiên đường nhiệt đới tươi tốt (Lush Paradise Graphics Engine)
  * - Tích hợp EnvironmentBuilder với địa hình đồi cỏ xanh tươi & rừng rậm xum xuê
@@ -29,6 +52,12 @@ export class GraphicsEngine implements IGraphicsEngine {
   private skyMaterial: THREE.ShaderMaterial | null = null;
   private environmentTexture: THREE.Texture | null = null;
   private readonly sunDirection = new THREE.Vector3(...SUN_DIRECTION).normalize();
+  private obstacleRoots: THREE.Object3D[] | null = null;
+  private readonly obstacleRaycaster = new THREE.Raycaster();
+  private readonly obstacleDown = new THREE.Vector3(0, -1, 0);
+  private readonly obstacleOrigin = new THREE.Vector3();
+  private readonly sightRaycaster = new THREE.Raycaster();
+  private readonly sightDirection = new THREE.Vector3();
 
   public init(
     scene: THREE.Scene,
@@ -52,7 +81,7 @@ export class GraphicsEngine implements IGraphicsEngine {
   }
 
   private setupSky(): void {
-    const geometry = new THREE.SphereGeometry(700, 48, 24);
+    const geometry = new THREE.SphereGeometry(4500, 48, 24);
     const material = new THREE.ShaderMaterial({
       vertexShader: skyVertexShader,
       fragmentShader: skyFragmentShader,
@@ -77,27 +106,33 @@ export class GraphicsEngine implements IGraphicsEngine {
     // và tiền vàng (metalness cao) chỉ tối đen dưới ánh sáng định hướng đơn.
     this.environmentTexture = skyEnvironment();
     this.scene.environment = this.environmentTexture;
-    this.scene.environmentIntensity = 0.5;
+    this.scene.environmentIntensity = 0.24;
 
-    // Nguồn sáng chính trùng hướng mặt trời vẽ trên sky shader để bóng đổ khớp với bầu trời.
-    const sun = new THREE.DirectionalLight(0xfff1d8, 2.8);
-    sun.position.copy(this.sunDirection).multiplyScalar(112);
+    // Nắng chiều vàng son: hướng thấp, đổ bóng dài, khớp với đĩa mặt trời trên sky shader.
+    const sun = new THREE.DirectionalLight(0xffc184, 2.9);
+    sun.position.copy(this.sunDirection).multiplyScalar(150);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(4096, 4096);
     sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 240;
-    sun.shadow.camera.left = -135;
-    sun.shadow.camera.right = 135;
-    sun.shadow.camera.top = 135;
-    sun.shadow.camera.bottom = -135;
-    sun.shadow.bias = -0.0004;
-    sun.shadow.normalBias = 0.025;
-    sun.shadow.radius = 2;
+    sun.shadow.camera.far = 340;
+    sun.shadow.camera.left = -150;
+    sun.shadow.camera.right = 150;
+    sun.shadow.camera.top = 150;
+    sun.shadow.camera.bottom = -150;
+    sun.shadow.bias = -0.00035;
+    sun.shadow.normalBias = 0.03;
+    sun.shadow.radius = 2.5;
     this.scene.add(sun);
 
-    // Ánh sáng môi trường: bầu trời xanh lơ + phản chiếu thảm cỏ xanh tươi
-    const hemi = new THREE.HemisphereLight(0xc3e0f7, 0x58775b, 1.5);
-    const ambient = new THREE.AmbientLight(0xf2f9ff, 0.25);
+    // Ánh sáng hắt ấm từ mặt biển phía sau camera: giữ tiền cảnh có khối chứ không thành bóng đen.
+    const fill = new THREE.DirectionalLight(0xffc79a, 1.0);
+    fill.position.copy(this.sunDirection).multiplyScalar(-110);
+    fill.position.y = 70;
+    this.scene.add(fill);
+
+    // Bóng đổ ngả lam khí quyển, đối lập với nắng son -> khối cây và đồi nổi hẳn lên.
+    const hemi = new THREE.HemisphereLight(0x9db8dc, 0x5c4a2c, 1.05);
+    const ambient = new THREE.AmbientLight(0xffd9b0, 0.26);
     this.scene.add(hemi, ambient);
   }
 
@@ -165,5 +200,48 @@ export class GraphicsEngine implements IGraphicsEngine {
 
   public getTerrainNormalAt(x: number, z: number): THREE.Vector3 {
     return this.environment.getTerrainNormalAt(x, z);
+  }
+
+  private getObstacleRoots(): THREE.Object3D[] {
+    if (!this.obstacleRoots) {
+      const roots: THREE.Object3D[] = [];
+      this.island.traverse((object) => {
+        if (CAMERA_OBSTACLE_NAMES.has(object.name)) roots.push(object);
+      });
+      this.obstacleRoots = roots;
+    }
+    return this.obstacleRoots;
+  }
+
+  /**
+   * Cao độ đỉnh vật thể đặc cao nhất tại cột (x, z): mái đình, vách thác, tán cây...
+   * Dùng cho đường bay né vật thể; trả về -Infinity khi cột trống.
+   */
+  public getCameraObstacleTopAt(x: number, z: number, fromY = 140): number {
+    const roots = this.getObstacleRoots();
+    if (roots.length === 0) return Number.NEGATIVE_INFINITY;
+
+    this.obstacleRaycaster.set(this.obstacleOrigin.set(x, fromY, z), this.obstacleDown);
+    this.obstacleRaycaster.far = fromY + 20;
+    const hits = this.obstacleRaycaster.intersectObjects(roots, true);
+    return hits.length > 0 ? hits[0].point.y : Number.NEGATIVE_INFINITY;
+  }
+
+  /**
+   * Đoạn thẳng từ camera tới rương có cắt qua vật thể đặc không.
+   * Chính xác hơn dò theo cột vì bắt được cả cạnh tán cây, góc mái giữa hai mẫu.
+   */
+  public isCameraPathBlocked(from: THREE.Vector3, to: THREE.Vector3): boolean {
+    const roots = this.getObstacleRoots();
+    if (roots.length === 0) return false;
+
+    const distance = from.distanceTo(to);
+    if (distance < 1e-4) return false;
+
+    this.sightDirection.copy(to).sub(from).divideScalar(distance);
+    this.sightRaycaster.set(from, this.sightDirection);
+    this.sightRaycaster.near = 0;
+    this.sightRaycaster.far = distance;
+    return this.sightRaycaster.intersectObjects(roots, true).length > 0;
   }
 }

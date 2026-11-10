@@ -3,32 +3,41 @@ import * as THREE from 'three';
 import { ChestManager } from './core/ChestManager';
 import { CameraDirector } from './core/CameraDirector';
 import { GraphicsEngine } from './graphics/GraphicsEngine';
+import { RendererManager } from './graphics/RendererManager';
+import { SKY_HORIZON_FOG } from './graphics/Shaders/SkyShader';
+import { SUN_DIRECTION, FOG_DENSITY } from './core/IslandLayout';
 import { globalEventBus, Student, ChestData } from './core/EventBus';
+import { SoundEngine } from './core/SoundEngine';
 
 class GameApp {
-  private renderer!: THREE.WebGLRenderer;
+  private rendererManager!: RendererManager;
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private clock: THREE.Clock = new THREE.Clock();
+  private readonly sunDirection = new THREE.Vector3(...SUN_DIRECTION).normalize();
 
   private chestManager!: ChestManager;
   private cameraDirector!: CameraDirector;
   private graphicsEngine!: GraphicsEngine;
   private allChests: ChestData[] = [];
+  private readonly sound = new SoundEngine();
 
   // Ultra-Minimalist UI Elements
   private btnStart!: HTMLButtonElement;
   private startContainer!: HTMLElement;
+  private startEyebrow!: HTMLElement;
   private btnSettings!: HTMLButtonElement;
   private settingsPopover!: HTMLElement;
   private btnCloseSettings!: HTMLButtonElement;
   private selectChest!: HTMLSelectElement;
   private btnResetCam!: HTMLButtonElement;
+  private btnSound!: HTMLButtonElement;
   private studentsPreview!: HTMLElement;
   private winnerBanner!: HTMLElement;
   private winnerNameEl!: HTMLElement;
   private winnerChestIdEl!: HTMLElement;
   private btnCloseWinner!: HTMLButtonElement;
+  private btnOpenQuiz!: HTMLButtonElement;
   private goldenFlash!: HTMLElement;
 
   constructor() {
@@ -39,6 +48,7 @@ class GameApp {
     this.initGameEvents();
 
     window.addEventListener('resize', () => this.onResize());
+    window.addEventListener('pointerdown', () => this.sound.unlock(), { once: true });
     (window as any).__gameApp = this;
     this.animate();
   }
@@ -46,18 +56,22 @@ class GameApp {
   private initDOM(): void {
     this.btnStart = document.getElementById('btn-start') as HTMLButtonElement;
     this.startContainer = document.getElementById('start-container') as HTMLElement;
+    this.startEyebrow = this.startContainer.querySelector('.start-eyebrow') as HTMLElement;
     this.btnSettings = document.getElementById('btn-settings') as HTMLButtonElement;
     this.settingsPopover = document.getElementById('settings-popover') as HTMLElement;
     this.btnCloseSettings = document.getElementById('btn-close-settings') as HTMLButtonElement;
     this.selectChest = document.getElementById('select-chest') as HTMLSelectElement;
     this.btnResetCam = document.getElementById('btn-reset-cam') as HTMLButtonElement;
+    this.btnSound = document.getElementById('btn-sound') as HTMLButtonElement;
     this.studentsPreview = document.getElementById('students-preview') as HTMLElement;
     this.winnerBanner = document.getElementById('winner-banner') as HTMLElement;
     this.winnerNameEl = document.getElementById('winner-name') as HTMLElement;
     this.winnerChestIdEl = document.getElementById('winner-chest-id') as HTMLElement;
     this.btnCloseWinner = document.getElementById('btn-close-winner') as HTMLButtonElement;
+    this.btnOpenQuiz = document.getElementById('btn-open-quiz') as HTMLButtonElement;
     this.goldenFlash = document.getElementById('golden-flash') as HTMLElement;
 
+    this.syncSoundButton();
     this.resetWinnerBanner();
   }
 
@@ -72,33 +86,29 @@ class GameApp {
   private initThree(): void {
     const container = document.getElementById('app')!;
 
-    // 1. Scene nhiệt đới tươi sáng
+    // 1. Scene hoàng hôn Đại Việt: sương ấm khớp sắc chân trời của sky shader
     this.scene = new THREE.Scene();
-    this.scene.background = null; // Bầu trời do SkyShader quản lý toàn diện (Ngày: Ảnh 1, Đêm: Ảnh 2)
-    this.scene.fog = new THREE.FogExp2(0xaacdd0, 0.0025);
+    this.scene.background = null; // Bầu trời do SkyShader quản lý toàn diện
+    this.scene.fog = new THREE.FogExp2(SKY_HORIZON_FOG, FOG_DENSITY);
 
     // 2. Camera: Vị trí ban đầu nhìn thẳng góc 45 độ xuống hòn đảo và 28 chiếc rương
     this.camera = new THREE.PerspectiveCamera(
       48,
       window.innerWidth / window.innerHeight,
       0.1,
-      1000
+      15000
     );
     this.camera.position.set(0, 76, 163);
     this.camera.lookAt(0, 14, 0);
 
-    // 3. Renderer: gắn trực tiếp vào #app kích thước 100vw x 100vh
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.12;
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
+    // 3. Renderer + hậu kỳ hoàng hôn: MSAA, tia nắng, bloom, color grade
     container.innerHTML = '';
-    container.appendChild(this.renderer.domElement);
+    this.rendererManager = new RendererManager(this.scene, this.camera, container, {
+      bloomStrength: 0.30,
+      bloomRadius: 0.55,
+      bloomThreshold: 1.55,
+      godRayStrength: 0.55
+    });
   }
 
   private initCore(): void {
@@ -110,35 +120,89 @@ class GameApp {
     this.chestManager = new ChestManager();
     this.allChests = this.chestManager.generateChests(undefined, heightSampler);
 
+    // Khôi phục các rương đã gọi khi quay về từ game trắc nghiệm (?used=...),
+    // sau đó xoá tham số khỏi URL để F5 làm mới trang sẽ đặt lại toàn bộ rương.
+    this.chestManager.markUsed(this.takeUsedIdsFromUrl());
+    this.updateStartAvailability();
+
     // 3. Khởi tạo Graphics với dữ liệu rương chuẩn hóa
-    this.graphicsEngine.init(this.scene, this.camera, this.renderer, this.allChests);
+    this.graphicsEngine.init(this.scene, this.camera, this.rendererManager.renderer, this.allChests);
 
     // 4. Đạo diễn Camera: Tích hợp hàm kiểm tra cao độ địa hình để chống va chạm vách đá
     this.cameraDirector = new CameraDirector(this.camera);
     this.cameraDirector.setHeightSampler(heightSampler);
+    this.cameraDirector.setObstacleSampler(
+      (x, z, fromY) => this.graphicsEngine.getCameraObstacleTopAt(x, z, fromY)
+    );
+    this.cameraDirector.setSightBlockedSampler(
+      (from, to) => this.graphicsEngine.isCameraPathBlocked(from, to)
+    );
 
     // 4. Nạp dữ liệu 28 học sinh vào Popover cài đặt
+    this.rebuildChestLists();
+  }
+
+  private rebuildChestLists(): void {
+    const used = new Set(this.chestManager.getUsedIds());
+
+    this.selectChest.innerHTML = '<option value="">-- Ngẫu nhiên --</option>';
+    this.studentsPreview.innerHTML = '';
+
     this.allChests.forEach((chest) => {
-      // Dropdown chọn rương chỉ định
+      const usedNow = used.has(chest.id);
+
       const option = document.createElement('option');
       option.value = chest.id.toString();
-      option.textContent = `#${chest.id} - ${chest.student.name}`;
+      option.textContent = `#${chest.id} - ${chest.student.name}${usedNow ? ' (đã gọi)' : ''}`;
+      option.disabled = usedNow;
       this.selectChest.appendChild(option);
 
-      // Danh sách cuộn xem nhanh 28 học sinh
       const item = document.createElement('div');
-      item.className = 'student-item';
+      item.className = usedNow ? 'student-item used' : 'student-item';
       const zoneName =
         chest.index < 7
           ? 'Bãi biển & Cột đá'
           : chest.index < 14
           ? 'Ven rừng & Suối'
           : chest.index < 21
-          ? 'Rừng cây & Bể đá'
+          ? 'Rừng cây & Đàn tế'
           : 'Cao nguyên & Đài cổ';
-      item.innerHTML = `<span>#${chest.id} ${chest.student.name}</span> <span style="color:#34d399;">${zoneName}</span>`;
+      item.innerHTML = usedNow
+        ? `<span>#${chest.id} ${chest.student.name}</span> <span style="color:#a98563;">Đã gọi</span>`
+        : `<span>#${chest.id} ${chest.student.name}</span> <span style="color:#34d399;">${zoneName}</span>`;
       this.studentsPreview.appendChild(item);
     });
+  }
+
+  private updateStartAvailability(): void {
+    const allUsed = this.chestManager.getAvailableChests().length === 0;
+    this.btnStart.disabled = allUsed;
+    this.startEyebrow.textContent = allUsed
+      ? 'Đã gọi hết 28 rương — hãy làm mới trang'
+      : 'Hòn đảo kho báu';
+  }
+
+  private takeUsedIdsFromUrl(): number[] {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('used');
+    if (raw === null) return [];
+
+    params.delete('used');
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      '',
+      window.location.pathname + (query ? `?${query}` : '') + window.location.hash
+    );
+
+    return raw
+      .split(',')
+      .map((value) => parseInt(value, 10))
+      .filter((value) => !isNaN(value));
+  }
+
+  private syncSoundButton(): void {
+    this.btnSound.textContent = this.sound.isMuted() ? '🔇 Âm thanh: Tắt' : '🔊 Âm thanh: Bật';
   }
 
   private initUIEvents(): void {
@@ -146,25 +210,51 @@ class GameApp {
     this.btnStart.addEventListener('click', () => {
       if (this.cameraDirector.isCameraFlying()) return;
 
-      // Ẩn nút Bắt đầu hoàn toàn để nhường 100% không gian cho 3D
-      this.startContainer.classList.add('hidden');
-      this.settingsPopover.classList.add('hidden');
+      this.sound.unlock();
+      this.sound.click();
 
       const targetId = parseInt(this.selectChest.value, 10);
       const winner = isNaN(targetId)
         ? this.chestManager.selectWinner()
         : this.chestManager.selectWinner(targetId);
 
+      if (!winner) {
+        this.sound.allUsed();
+        this.updateStartAvailability();
+        return;
+      }
+
+      // Đánh dấu đã gọi ngay khi chọn: rương này sẽ không bao giờ xuất hiện lại
+      // cho tới khi làm mới trang.
+      this.chestManager.markUsed([winner.id]);
+      this.rebuildChestLists();
+      this.updateStartAvailability();
+
+      try {
+        localStorage.setItem('selectedStudent', winner.student.name);
+        localStorage.setItem('selectedChestId', winner.id.toString());
+      } catch {
+        /* localStorage có thể bị chặn */
+      }
+
+      // Ẩn nút Bắt đầu hoàn toàn để nhường 100% không gian cho 3D
+      this.startContainer.classList.add('hidden');
+      this.settingsPopover.classList.add('hidden');
+
+      this.sound.start();
       this.startFlight(winner);
     });
 
     // 2. Toggle Menu Bánh Răng (⚙️)
     this.btnSettings.addEventListener('click', (e) => {
       e.stopPropagation();
+      this.sound.unlock();
+      this.sound.click();
       this.settingsPopover.classList.toggle('hidden');
     });
 
     this.btnCloseSettings.addEventListener('click', () => {
+      this.sound.click();
       this.settingsPopover.classList.add('hidden');
     });
 
@@ -176,22 +266,53 @@ class GameApp {
       }
     });
 
-    // 3. Reset Camera: Trở về góc nhìn tổng quan & reset lại rương
-    this.btnResetCam.addEventListener('click', () => {
-      this.cameraDirector.resetToOverview(false);
-      this.resetWinnerBanner();
-      this.startContainer.classList.remove('hidden');
-      this.settingsPopover.classList.add('hidden');
-      this.graphicsEngine.resetAll();
+    // 3. Bật/tắt âm thanh (lưu lựa chọn vào localStorage)
+    this.btnSound.addEventListener('click', () => {
+      this.sound.unlock();
+      const muted = this.sound.toggle();
+      this.syncSoundButton();
+      if (!muted) this.sound.click();
     });
 
-    // 4. Nút Tiếp tục / Chơi lại ở Winner Banner
-    this.btnCloseWinner.addEventListener('click', () => {
-      this.resetWinnerBanner();
-      this.cameraDirector.resetToOverview(false);
-      this.startContainer.classList.remove('hidden');
-      this.graphicsEngine.resetAll();
+    // 4. Reset Camera: Trở về góc nhìn tổng quan & reset lại rương
+    this.btnResetCam.addEventListener('click', () => {
+      this.sound.click();
+      this.returnToOverview();
     });
+
+    // 5. Nút "Trở lại" ở Winner Banner
+    this.btnCloseWinner.addEventListener('click', () => {
+      this.sound.click();
+      this.returnToOverview();
+    });
+
+    // 6. Nút "Câu hỏi": sang game trắc nghiệm, mang theo danh sách rương đã gọi
+    this.btnOpenQuiz.addEventListener('click', () => {
+      this.sound.click();
+      this.openQuizGame();
+    });
+  }
+
+  private returnToOverview(): void {
+    this.sound.reset();
+    this.cameraDirector.resetToOverview(false);
+    this.resetWinnerBanner();
+    this.startContainer.classList.remove('hidden');
+    this.settingsPopover.classList.add('hidden');
+    this.graphicsEngine.resetAll();
+    this.rebuildChestLists();
+    this.updateStartAvailability();
+  }
+
+  private openQuizGame(): void {
+    const url = new URL('./tracnghiem_1003/index.html', window.location.href);
+    const studentName = this.winnerNameEl.textContent?.trim();
+    const used = this.chestManager.getUsedIds().join(',');
+
+    if (studentName) url.searchParams.set('student', studentName);
+    if (used) url.searchParams.set('used', used);
+
+    window.location.href = url.toString();
   }
 
   private initGameEvents(): void {
@@ -199,10 +320,13 @@ class GameApp {
       // Lưu sẵn thông tin người thắng, đợi ánh sáng bùng nổ rồi mới hiển thị
       this.winnerNameEl.textContent = studentName;
       this.winnerChestIdEl.textContent = `Rương May Mắn #${chestId}`;
+      this.sound.arrive();
     });
 
     // Khi mở rương: Sáng lên khắp màn hình trong khoảng 1s rồi mờ dần đưa ra tên học sinh trong rương
     globalEventBus.on('CHEST_OPENED', () => {
+      this.sound.open();
+
       // 1. Sáng bừng lên khắp màn hình
       gsap.to(this.goldenFlash, {
         opacity: 1,
@@ -220,6 +344,7 @@ class GameApp {
 
             // 4. Đưa ra tên học sinh trong rương trang trọng
             this.winnerBanner.classList.remove('hidden');
+            this.sound.win();
           });
         }
       });
@@ -239,8 +364,7 @@ class GameApp {
   private onResize(): void {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.rendererManager.resize(window.innerWidth, window.innerHeight);
   }
 
   private animate = (): void => {
@@ -249,7 +373,8 @@ class GameApp {
     const elapsed = this.clock.getElapsedTime();
 
     this.graphicsEngine.update(delta, elapsed);
-    this.renderer.render(this.scene, this.camera);
+    this.rendererManager.updateSun(this.sunDirection);
+    this.rendererManager.render(elapsed);
   };
 }
 

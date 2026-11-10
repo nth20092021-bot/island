@@ -70,10 +70,10 @@ export const waterFragmentShader = /* glsl */ `
 
     float dist = length(q);
     float depth = smoothstep(112.0, 235.0, dist);
-    vec3 shallow = vec3(0.10, 0.60, 0.62);
-    vec3 deep = vec3(0.025, 0.185, 0.40);
+    vec3 shallow = vec3(0.015, 0.105, 0.120);
+    vec3 deep = vec3(0.003, 0.022, 0.060);
     vec3 color = mix(shallow, deep, depth);
-    color = mix(color, vec3(0.06, 0.42, 0.50), uPool * 0.8);
+    color = mix(color, vec3(0.010, 0.065, 0.075), uPool * 0.8);
     color *= 0.92 + smoothstep(-1.0, 1.8, h0) * 0.16;
 
     // Đường bọt mép bờ bám theo hình dạng thật của hòn đảo và thở theo nhịp sóng vỗ.
@@ -84,16 +84,16 @@ export const waterFragmentShader = /* glsl */ `
                * (0.5 + fbm(q * 0.11 + vec2(t * 0.22, -t * 0.17)));
     foam = clamp(foam, 0.0, 1.0) * (1.0 - uPool);
     float whitecap = smoothstep(2.35, 2.95, h0) * depth * 0.42 * (1.0 - uPool);
-    color = mix(color, vec3(0.90, 0.97, 0.97), max(foam, whitecap) * 0.8);
+    color = mix(color, vec3(0.82, 0.70, 0.45), max(foam, whitecap) * 0.70);
 
     vec3 viewDir = normalize(cameraPosition - vWorld);
     float fresnel = pow(1.0 - abs(dot(normal, viewDir)), 3.2);
-    color = mix(color, vec3(0.60, 0.79, 0.92), fresnel * mix(0.30, 0.45, uPool));
+    color = mix(color, vec3(0.300, 0.180, 0.085), fresnel * mix(0.30, 0.45, uPool));
     float glint = pow(max(dot(reflect(-normalize(uSunDirection), normal), viewDir), 0.0), 120.0);
-    color += vec3(1.0, 0.93, 0.78) * glint * mix(0.55, 0.35, uPool) * (1.0 - max(foam, whitecap));
+    color += vec3(1.0, 0.76, 0.42) * glint * mix(0.65, 0.40, uPool) * (1.0 - max(foam, whitecap));
 
-    // Sương mù khí quyển: mặt biển nhạt dần rồi hòa đúng sắc chân trời của sky shader.
-    color = mix(color, vec3(0.62, 0.78, 0.92), smoothstep(150.0, 430.0, dist) * (1.0 - uPool));
+    // Sương mù khí quyển: mặt biển nhạt dần rồi hòa đúng sắc chân trời hoàng hôn.
+    color = mix(color, vec3(0.500, 0.265, 0.105), smoothstep(180.0, 520.0, dist) * (1.0 - uPool));
 
     gl_FragColor = vec4(color, mix(1.0, 0.9, uPool));
     #include <tonemapping_fragment>

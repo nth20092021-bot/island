@@ -1,3 +1,21 @@
+:root {
+  --son-950: #3d0c0a;
+  --son-900: #5c1210;
+  --son-800: #7a1d18;
+  --son-700: #9e2a22;
+  --son-500: #bf4432;
+  --gold-100: #f8ebc9;
+  --gold-300: #f0d08a;
+  --gold-500: #d9ab52;
+  --gold-700: #a97c2f;
+  --jade-300: #7fc0aa;
+  --jade-500: #2f7d6a;
+  --jade-700: #1f5c4d;
+  --ivory: #f7edd8;
+  --serif: 'Playfair Display', 'Times New Roman', serif;
+  --sans: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -8,9 +26,9 @@ body, html {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #0284c7;
-  color: #f8fafc;
+  font-family: var(--sans);
+  background-color: var(--son-950);
+  color: var(--ivory);
   user-select: none;
 }
 
@@ -23,48 +41,64 @@ body, html {
   z-index: 1;
 }
 
-/* Nút Bánh Răng (Top Right) */
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--gold-300);
+  outline-offset: 3px;
+}
+
+/* Nút Bánh Răng (Top Right) — ấn son viền vàng */
 .icon-btn {
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  color: #ffffff;
-  font-size: 1.25rem;
+  border: 2px solid var(--gold-500);
+  background: radial-gradient(circle at 35% 28%, var(--son-700), var(--son-900) 72%);
+  color: var(--gold-100);
+  font-size: 1.2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 30;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.25),
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    0 0 18px rgba(217, 171, 82, 0.18);
 }
 
 .icon-btn:hover {
-  background: rgba(15, 23, 42, 0.85);
   transform: rotate(45deg) scale(1.08);
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--gold-300);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.4),
+    0 8px 22px rgba(0, 0, 0, 0.5),
+    0 0 26px rgba(217, 171, 82, 0.35);
 }
 
-/* Popover Menu Cài Đặt */
+/* Popover Menu Cài Đặt — gỗ sơn son, viền thếp vàng */
 .popover {
   position: fixed;
-  top: 74px;
+  top: 78px;
   right: 20px;
-  width: 340px;
-  max-height: calc(100vh - 100px);
-  background: rgba(15, 23, 42, 0.92);
+  width: 344px;
+  max-height: calc(100vh - 104px);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(158, 42, 34, 0.35), transparent 70%),
+    linear-gradient(180deg, rgba(61, 12, 10, 0.97) 0%, rgba(30, 8, 7, 0.98) 100%);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 18px;
+  border: 1px solid rgba(217, 171, 82, 0.55);
+  border-radius: 16px;
   padding: 18px;
   z-index: 40;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.08),
+    0 22px 50px rgba(0, 0, 0, 0.6),
+    0 0 34px rgba(217, 171, 82, 0.12);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -83,29 +117,34 @@ body, html {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-family: var(--serif);
   font-weight: 700;
-  font-size: 1.05rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.12rem;
+  letter-spacing: 0.02em;
+  color: var(--gold-100);
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, transparent, rgba(217, 171, 82, 0.75), transparent) 1;
   padding-bottom: 10px;
 }
 
 .close-btn {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--gold-500);
   font-size: 1.5rem;
-  cursor: pointer;
   line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s ease;
 }
 
 .close-btn:hover {
-  color: #ffffff;
+  color: var(--gold-100);
 }
 
 .popover-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   overflow-y: auto;
 }
 
@@ -114,6 +153,7 @@ body, html {
   flex-direction: column;
   gap: 6px;
   font-size: 0.85rem;
+  color: var(--gold-300);
 }
 
 .form-group.row {
@@ -122,68 +162,128 @@ body, html {
   align-items: center;
 }
 
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.form-actions .btn {
+  flex: 1;
+  padding-left: 10px;
+  padding-right: 10px;
+  white-space: nowrap;
+}
+
 select {
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: #1e293b;
-  color: #f8fafc;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(26, 7, 6, 0.9);
+  color: var(--ivory);
+  border: 1px solid rgba(217, 171, 82, 0.45);
+  font-family: var(--sans);
   font-size: 0.85rem;
   outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select:hover,
+select:focus {
+  border-color: var(--gold-300);
+  box-shadow: 0 0 0 3px rgba(217, 171, 82, 0.12);
+}
+
+select option {
+  background: #2a0c0a;
+  color: var(--ivory);
 }
 
 .btn {
-  padding: 8px 16px;
-  border-radius: 10px;
-  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-family: var(--sans);
   font-weight: 600;
   font-size: 0.85rem;
+  letter-spacing: 0.02em;
   cursor: pointer;
   transition: all 0.15s ease;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(180deg, var(--son-700), var(--son-900));
+  color: var(--gold-100);
+  border: 1px solid rgba(217, 171, 82, 0.6);
+  box-shadow: inset 0 1px 0 rgba(248, 235, 201, 0.14);
 }
 
 .btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, var(--son-500), var(--son-800));
+  border-color: var(--gold-300);
+  box-shadow: inset 0 1px 0 rgba(248, 235, 201, 0.2), 0 0 16px rgba(217, 171, 82, 0.22);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
-  border: none;
+  background: linear-gradient(180deg, var(--jade-500), var(--jade-700));
+  border-color: rgba(127, 192, 170, 0.6);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  background: linear-gradient(180deg, #3f9a83, var(--jade-500));
+}
+
+.students-list-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--gold-300);
 }
 
 .students-scroll {
   max-height: 140px;
   overflow-y: auto;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(217, 171, 82, 0.18);
   border-radius: 8px;
   padding: 8px;
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: rgba(247, 237, 216, 0.82);
   display: flex;
   flex-direction: column;
   gap: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(217, 171, 82, 0.5) transparent;
+}
+
+.students-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.students-scroll::-webkit-scrollbar-thumb {
+  background: rgba(217, 171, 82, 0.45);
+  border-radius: 3px;
 }
 
 .student-item {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
   padding: 2px 4px;
 }
 
-/* Nút BẮT ĐẦU (Chính giữa phía dưới) */
+.student-item.used {
+  opacity: 0.45;
+  text-decoration: line-through;
+  text-decoration-color: rgba(169, 133, 99, 0.7);
+}
+
+/* Nút BẮT ĐẦU — khung trống đồng + ấn son thếp vàng */
 #start-container {
   position: fixed;
-  bottom: 36px;
+  bottom: 26px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   transition: all 0.35s ease;
 }
 
@@ -193,48 +293,118 @@ select {
   pointer-events: none;
 }
 
+.drum-medallion {
+  width: 128px;
+  height: 128px;
+  display: block;
+  color: var(--gold-500);
+  filter: drop-shadow(0 0 12px rgba(217, 171, 82, 0.4));
+  animation: drumSpin 90s linear infinite;
+}
+
+@keyframes drumSpin {
+  to { transform: rotate(360deg); }
+}
+
+.start-eyebrow {
+  font-family: var(--serif);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.46em;
+  text-indent: 0.46em;
+  text-transform: uppercase;
+  color: var(--gold-300);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7), 0 0 18px rgba(217, 171, 82, 0.35);
+}
+
 .start-btn {
-  padding: 16px 42px;
-  border-radius: 9999px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #ffffff;
-  font-size: 1.25rem;
+  position: relative;
+  padding: 15px 48px;
+  border-radius: 10px;
+  border: 2px solid var(--gold-500);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 42%),
+    linear-gradient(180deg, #a8271f 0%, #7a1a15 55%, #55100d 100%);
+  color: var(--gold-100);
+  font-family: var(--sans);
+  font-size: 1.16rem;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 0 16px rgba(217, 171, 82, 0.35);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.35),
+    inset 0 0 0 5px rgba(61, 12, 10, 0.55),
+    inset 0 -10px 24px rgba(0, 0, 0, 0.45),
+    0 14px 34px rgba(0, 0, 0, 0.55),
+    0 0 26px rgba(217, 171, 82, 0.22);
   transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .start-btn:hover {
-  transform: scale(1.06);
-  box-shadow: 0 14px 40px rgba(245, 158, 11, 0.7);
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  transform: translateY(-2px) scale(1.02);
+  border-color: var(--gold-300);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 42%),
+    linear-gradient(180deg, #bf3325 0%, #8d211a 55%, #601310 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.45),
+    inset 0 0 0 5px rgba(61, 12, 10, 0.55),
+    inset 0 -10px 24px rgba(0, 0, 0, 0.4),
+    0 18px 42px rgba(0, 0, 0, 0.6),
+    0 0 36px rgba(217, 171, 82, 0.38);
 }
 
 .start-btn:active {
-  transform: scale(0.97);
+  transform: translateY(0) scale(0.98);
+}
+
+.start-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: saturate(0.4);
+  transform: none;
+}
+
+.start-btn:disabled:hover {
+  transform: none;
+  border-color: var(--gold-500);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 42%),
+    linear-gradient(180deg, #a8271f 0%, #7a1a15 55%, #55100d 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.35),
+    inset 0 0 0 5px rgba(61, 12, 10, 0.55),
+    inset 0 -10px 24px rgba(0, 0, 0, 0.45),
+    0 14px 34px rgba(0, 0, 0, 0.55);
 }
 
 .play-icon {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  color: var(--gold-300);
 }
 
-/* Winner Banner - Đặt ở đỉnh màn hình để không che mất rương 3D và tiền vàng */
+/* Winner Banner — sắc phong son–vàng, niêm ngọc */
 #winner-banner {
   position: fixed;
-  top: 32px;
+  top: 56px;
   left: 50%;
-  width: min(640px, calc(100vw - 36px));
-  padding: 24px 38px 28px;
-  border-radius: 22px;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 26, 0.97) 100%);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(245, 158, 11, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  width: min(660px, calc(100vw - 36px));
+  padding: 58px 40px 30px;
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(191, 68, 50, 0.35), transparent 62%),
+    linear-gradient(180deg, rgba(92, 18, 16, 0.98) 0%, rgba(48, 10, 9, 0.98) 100%);
+  border: 2px solid var(--gold-500);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.18),
+    inset 0 0 0 7px rgba(61, 12, 10, 0.6),
+    0 26px 60px rgba(0, 0, 0, 0.62),
+    0 0 54px rgba(217, 171, 82, 0.18);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -247,16 +417,23 @@ select {
   transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s ease;
 }
 
-/* Viền accent vàng mảnh phía trên thay cho khung viền vàng dày */
-.winner-banner::before {
+/* Đường chỉ vàng chạy hai mép trên/dưới tấm sắc phong */
+#winner-banner::before,
+#winner-banner::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 36px;
-  right: 36px;
-  height: 3px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0) 0%, #f59e0b 30%, #fef08a 50%, #f59e0b 70%, rgba(245, 158, 11, 0) 100%);
+  left: 42px;
+  right: 42px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(240, 208, 138, 0.85), transparent);
+}
+
+#winner-banner::before {
+  top: 10px;
+}
+
+#winner-banner::after {
+  bottom: 10px;
 }
 
 #winner-banner.hidden,
@@ -267,80 +444,117 @@ select {
   transform: translateX(-50%) translateY(-22px) scale(0.96) !important;
 }
 
+.winner-medallion {
+  position: absolute;
+  top: -46px;
+  left: 50%;
+  width: 92px;
+  height: 92px;
+  transform: translateX(-50%);
+  padding: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #8a1f19, #4a0d0b 72%);
+  border: 2px solid var(--gold-500);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.25),
+    0 8px 22px rgba(0, 0, 0, 0.55),
+    0 0 26px rgba(217, 171, 82, 0.35);
+}
+
+.winner-medallion svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .winner-eyebrow {
-  font-size: 0.88rem;
-  font-weight: 800;
-  letter-spacing: 0.28em;
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
   text-transform: uppercase;
-  color: #fbbf24;
-  text-shadow: 0 0 18px rgba(251, 191, 36, 0.5);
+  color: var(--gold-300);
+  text-shadow: 0 0 18px rgba(217, 171, 82, 0.45);
 }
 
 #winner-name {
-  font-size: clamp(1.8rem, 5.5vw, 3.2rem);
-  line-height: 1.15;
-  font-weight: 800;
-  letter-spacing: -0.015em;
-  color: #ffffff;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6), 0 0 35px rgba(255, 255, 255, 0.3);
+  font-family: var(--serif);
+  font-size: clamp(1.9rem, 5.5vw, 3.3rem);
+  line-height: 1.14;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  color: var(--ivory);
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.35),
+    0 0 28px rgba(240, 208, 138, 0.3);
 }
 
 .winner-meta {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .winner-badge {
   padding: 6px 18px;
-  border-radius: 9999px;
-  background: rgba(245, 158, 11, 0.18);
-  border: 1px solid rgba(251, 191, 36, 0.5);
-  color: #fde047;
-  font-size: 0.95rem;
-  font-weight: 700;
-  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.2);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(47, 125, 106, 0.45), rgba(31, 92, 77, 0.55));
+  border: 1px solid var(--jade-300);
+  color: #d8f2e6;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .winner-sep {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: rgba(148, 163, 184, 0.7);
+  background: var(--gold-500);
 }
 
 .winner-sub {
-  font-size: 0.95rem;
-  color: #94a3b8;
-  letter-spacing: 0.03em;
+  font-size: 0.92rem;
+  color: rgba(247, 237, 216, 0.72);
+  letter-spacing: 0.05em;
   font-weight: 500;
 }
 
 .winner-replay-btn,
 .winner-btn {
-  margin-top: 14px;
-  min-width: 170px;
-  padding: 12px 32px;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.36);
-  background: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
+  margin-top: 16px;
+  min-width: 176px;
+  padding: 12px 34px;
+  border-radius: 9px;
+  border: 2px solid var(--gold-500);
+  background: linear-gradient(180deg, #a8271f 0%, #7a1a15 60%, #55100d 100%);
+  color: var(--gold-100);
+  font-family: var(--sans);
   font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.12em;
+  text-indent: 0.12em;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.28),
+    inset 0 -8px 18px rgba(0, 0, 0, 0.4),
+    0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 .winner-replay-btn:hover,
 .winner-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(245, 158, 11, 0.6);
-  color: #ffffff;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(245, 158, 11, 0.3);
+  border-color: var(--gold-300);
+  background: linear-gradient(180deg, #bf3325 0%, #8d211a 60%, #601310 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.4),
+    inset 0 -8px 18px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.45),
+    0 0 26px rgba(217, 171, 82, 0.3);
 }
 
 .winner-replay-btn:active,
@@ -348,9 +562,39 @@ select {
   transform: translateY(0);
 }
 
+.winner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.winner-actions .winner-btn {
+  margin-top: 0;
+}
+
+.winner-btn-ghost {
+  background: rgba(26, 7, 6, 0.35);
+  border-color: rgba(217, 171, 82, 0.6);
+  color: var(--gold-300);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.12),
+    0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.winner-btn-ghost:hover {
+  background: rgba(92, 18, 16, 0.55);
+  border-color: var(--gold-300);
+  color: var(--gold-100);
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 235, 201, 0.2),
+    0 10px 22px rgba(0, 0, 0, 0.4),
+    0 0 22px rgba(217, 171, 82, 0.25);
+}
+
 /* Golden Flash: bùng nổ ánh sáng vàng toàn màn hình khi mở rương.
-   Lớp phủ chỉ animation opacity, không còn mix-blend-mode: screen (buộc
-   Chromium trộn lại toàn bộ canvas WebGL mỗi khung hình -> tụt fps, giật hình). */
+   Chỉ animation opacity, không dùng mix-blend-mode để tránh trộn lại canvas WebGL. */
 .golden-flash {
   position: fixed;
   top: 0;
@@ -358,12 +602,9 @@ select {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 80;
-  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fef08a 22%, #f59e0b 58%, #b45309 88%, #78350f 100%);
   z-index: 90;
-  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fffbeb 25%, #fde047 55%, #f59e0b 80%, rgba(217, 119, 6, 0.9) 100%);
+  background: radial-gradient(circle at 50% 50%, #fff7e0 0%, #ffe9a8 22%, #f0c264 55%, #b9791f 82%, rgba(122, 74, 12, 0.9) 100%);
   opacity: 0;
-  mix-blend-mode: screen;
 }
 
 /* In-App Browser Prompt (Messenger / Facebook / Zalo) */
@@ -373,8 +614,8 @@ select {
   left: 0;
   width: 100vw;
   z-index: 9999;
-  background: linear-gradient(90deg, #1e293b, #0f172a);
-  border-bottom: 2px solid #f59e0b;
+  background: linear-gradient(90deg, var(--son-950), #2a0c0a);
+  border-bottom: 2px solid var(--gold-500);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   padding: 10px 16px;
   animation: slideDownInApp 0.3s ease-out;
@@ -388,16 +629,17 @@ select {
   justify-content: space-between;
   gap: 12px;
   font-size: 0.88rem;
-  color: #f8fafc;
+  color: var(--ivory);
 }
 
 .inapp-btn {
-  background: #f59e0b;
-  color: #0f172a;
+  background: linear-gradient(180deg, var(--gold-300), var(--gold-500));
+  color: var(--son-950);
   border: none;
+  font-family: var(--sans);
   font-weight: 700;
   padding: 6px 14px;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
   font-size: 0.82rem;
@@ -405,13 +647,13 @@ select {
 }
 
 .inapp-btn:hover {
-  background: #fbbf24;
+  background: linear-gradient(180deg, #ffe9b2, var(--gold-300));
 }
 
 .inapp-close {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--gold-300);
   font-size: 1.1rem;
   cursor: pointer;
   padding: 0 6px;
@@ -420,4 +662,37 @@ select {
 @keyframes slideDownInApp {
   from { transform: translateY(-100%); }
   to { transform: translateY(0); }
+}
+
+@media (max-height: 700px) {
+  #start-container {
+    bottom: 16px;
+    gap: 6px;
+  }
+
+  .drum-medallion {
+    width: 92px;
+    height: 92px;
+  }
+
+  .start-btn {
+    padding: 12px 38px;
+    font-size: 1.05rem;
+  }
+
+  #winner-banner {
+    top: 30px;
+    padding: 46px 22px 22px;
+  }
+
+  .winner-medallion {
+    top: -30px;
+    width: 62px;
+    height: 62px;
+    padding: 6px;
+  }
+
+  #winner-name {
+    font-size: clamp(1.5rem, 5.5vw, 2.2rem);
+  }
 }

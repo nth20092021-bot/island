@@ -10,8 +10,20 @@ export const RIVER_PATH: readonly [number, number][] = [
   [8, 45], [18, 44], [26, 49], [31, 57], [40, 61]
 ];
 
-/** Shared sun vector: sky shader, key light and water specular all read this. */
-export const SUN_DIRECTION: readonly [number, number, number] = [-0.45, 0.82, 0.37];
+/** Shared sun vector: sky shader, key light and water specular all read this.
+ *  Mặt trời thấp ~15° chếch trái khung nhìn mặc định để thấy được quầng hoàng hôn. */
+export const SUN_DIRECTION: readonly [number, number, number] = [-0.42, 0.20, -0.60];
+
+/** Mật độ sương mù ấm dùng chung cho scene và shader tán lá. */
+export const FOG_DENSITY = 0.0015;
+
+// Quần thể làng Việt (tọa độ nội bộ đảo, trước khi nhân ISLAND_SCALE):
+// sân đình nằm trên một thềm đất phẳng khoét vào sườn đông nam, hướng ra khung nhìn mặc định.
+export const VILLAGE_CENTER = { x: 32, z: 8 } as const;
+export const VILLAGE_FLAT_RADIUS = 12.5;
+export const VILLAGE_BLEND_RADIUS = 18.5;
+export const LOTUS_POND_CENTER = { x: 16, z: 24 } as const;
+export const RICE_TERRACE_CENTER = { x: -38, z: 10 } as const;
 
 export function riverDistance(x: number, z: number): number {
   let closest = Infinity;

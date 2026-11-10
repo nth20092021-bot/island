@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ChestData, Student } from './EventBus';
-import { ISLAND_SCALE, ISLAND_SHORE_RADIUS, riverDistance } from './IslandLayout';
+import { ISLAND_SCALE, ISLAND_SHORE_RADIUS, riverDistance, VILLAGE_CENTER, LOTUS_POND_CENTER, RICE_TERRACE_CENTER } from './IslandLayout';
 
 export const DEFAULT_STUDENTS: Student[] = [
   { id: 1, name: 'Vương Trần Thiên Ái' },
@@ -35,7 +35,7 @@ export const DEFAULT_STUDENTS: Student[] = [
 
 export interface IslandConfig {
   beachRadius: number;     // Bán kính ngoài cùng dành cho rương
-  volcanoRadius: number;   // Bán kính lõi không đặt rương (bể đá cổ)
+  volcanoRadius: number;   // Bán kính lõi không đặt rương (đàn tế trời)
   spiralTurns: number;     // Vòng xoắn đường mòn thiên nhiên = 2.4
   totalChests: number;     // Đúng 28 rương kho báu
   beachHeight: number;     // Giá trị tương thích cấu hình cũ
@@ -61,6 +61,7 @@ export type HeightSampler = (x: number, z: number) => number;
 export class ChestManager {
   private chests: ChestData[] = [];
   private winningChest: ChestData | null = null;
+  private usedChestIds = new Set<number>();
   private config: IslandConfig;
 
   constructor(config: IslandConfig = DEFAULT_ISLAND_CONFIG) {
@@ -91,7 +92,7 @@ export class ChestManager {
       const angle = initialAngle + sector * Math.PI * 2 / 7 + ring * 0.41;
       let x = Math.cos(angle) * radius;
       let z = Math.sin(angle) * radius;
-      // Avoid stream, falls, summit baths, the second basin and coastal monuments.
+      // Avoid stream, falls, summit altar, the second basin and coastal monuments.
       for (let attempt = 0; attempt < 18; attempt++) {
         const lx = x / ISLAND_SCALE, lz = z / ISLAND_SCALE;
         const safe = riverDistance(lx, lz) > 6.8
@@ -100,7 +101,10 @@ export class ChestManager {
           && Math.hypot(lx, lz) > 14.5
           && Math.hypot(lx + 44, lz + 36) > 15
           && Math.hypot(lx - 48, lz + 24) > 14
-          && Math.hypot(lx - 31, lz - 55) > 12;
+          && Math.hypot(lx - 31, lz - 55) > 12
+          && Math.hypot(lx - VILLAGE_CENTER.x, lz - VILLAGE_CENTER.z) > 22
+          && Math.hypot(lx - LOTUS_POND_CENTER.x, lz - LOTUS_POND_CENTER.z) > 9
+          && Math.hypot(lx - RICE_TERRACE_CENTER.x, lz - RICE_TERRACE_CENTER.z) > 20;
         if (safe) break;
         const shifted = angle + (attempt + 1) * 0.17;
         x = Math.cos(shifted) * radius;
@@ -148,19 +152,50 @@ export class ChestManager {
     return this.chests.find((c) => c.id === idOrIndex || c.index === idOrIndex);
   }
 
-  public selectWinner(specifiedIndexOrId?: number): ChestData {
+  /**
+   * Đánh dấu các rương đã được gọi (theo id) để không bao giờ chọn lại
+   * cho tới khi người dùng làm mới trang.
+   */
+  public markUsed(ids: number[]): void {
+    ids.forEach((id) => this.usedChestIds.add(id));
+  }
+
+  public isUsed(id: number): boolean {
+    return this.usedChestIds.has(id);
+  }
+
+  public getUsedIds(): number[] {
+    return Array.from(this.usedChestIds).sort((a, b) => a - b);
+  }
+
+  public getAvailableChests(): ChestData[] {
+    return this.chests.filter((c) => !this.usedChestIds.has(c.id));
+  }
+
+  /**
+   * Chọn rương chiến thắng trong số các rương chưa gọi.
+   * Rương chỉ định đã bị gọi (hoặc không tồn tại) sẽ được thay bằng rương ngẫu nhiên còn trống.
+   */
+  public selectWinner(specifiedIndexOrId?: number): ChestData | null {
     if (this.chests.length === 0) {
       this.generateChests();
     }
 
     this.chests.forEach((c) => (c.isWinner = false));
 
-    let winner: ChestData;
+    const available = this.getAvailableChests();
+    if (available.length === 0) {
+      this.winningChest = null;
+      return null;
+    }
+
+    let winner: ChestData | undefined;
     if (specifiedIndexOrId !== undefined) {
       const found = this.getChest(specifiedIndexOrId);
-      winner = found || this.chests[Math.floor(Math.random() * this.chests.length)];
-    } else {
-      winner = this.chests[Math.floor(Math.random() * this.chests.length)];
+      if (found && !this.usedChestIds.has(found.id)) winner = found;
+    }
+    if (!winner) {
+      winner = available[Math.floor(Math.random() * available.length)];
     }
 
     winner.isWinner = true;
