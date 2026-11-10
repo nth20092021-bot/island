@@ -6,3 +6,4 @@ dist
 .playwright-mcp
 serve.ps1
 push_to_github.bat
+push_to_github.ps1
