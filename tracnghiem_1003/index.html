@@ -83,67 +83,37 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: 12px clamp(16px, 3vw, 40px);
-      background:
-        radial-gradient(58% 130% at 50% -40%, rgba(240, 208, 138, 0.12), transparent 62%),
-        linear-gradient(180deg, rgba(28, 7, 5, 0.94), rgba(20, 5, 4, 0.55));
-      border-bottom: 1px solid rgba(217, 171, 82, 0.36);
-      box-shadow: inset 0 1px 0 rgba(248, 235, 201, 0.06), 0 14px 34px rgba(0, 0, 0, 0.4);
-    }
-
-    .topbar::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: -1px;
-      height: 1px;
-      pointer-events: none;
-      background: linear-gradient(90deg, transparent, rgba(240, 208, 138, 0.5) 24%, rgba(240, 208, 138, 0.5) 76%, transparent);
-      opacity: 0.65;
+      padding: 10px clamp(16px, 3vw, 40px);
+      background: linear-gradient(180deg, rgba(24, 6, 4, 0.92), rgba(17, 4, 3, 0.7));
+      border-bottom: 1px solid rgba(217, 171, 82, 0.18);
     }
 
     .top-link {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border-radius: 10px;
-      border: 1px solid rgba(217, 171, 82, 0.55);
-      background: linear-gradient(180deg, rgba(92, 18, 16, 0.6), rgba(40, 9, 7, 0.6));
-      color: var(--gold-300);
-      font-size: 0.92rem;
+      gap: 7px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: rgba(248, 235, 201, 0.7);
+      font-size: 0.9rem;
       font-weight: 600;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.02em;
       text-decoration: none;
       white-space: nowrap;
-      transition: all 0.2s ease;
-      box-shadow: inset 0 1px 0 rgba(248, 235, 201, 0.08);
+      transition: color 0.2s ease, background-color 0.2s ease;
     }
 
     .top-link:hover {
-      border-color: var(--gold-300);
-      background: linear-gradient(180deg, rgba(122, 29, 24, 0.72), rgba(61, 12, 10, 0.7));
       color: var(--gold-100);
-      transform: translateY(-1px);
-      box-shadow: inset 0 1px 0 rgba(248, 235, 201, 0.14), 0 10px 22px rgba(0, 0, 0, 0.35), 0 0 20px rgba(217, 171, 82, 0.16);
+      background: rgba(217, 171, 82, 0.09);
     }
 
     .brand {
       position: relative;
       text-align: center;
       line-height: 1.15;
-    }
-
-    .brand::after {
-      content: '';
-      display: block;
-      width: 138px;
-      height: 3px;
-      margin: 7px auto 0;
-      background:
-        radial-gradient(circle at 50% 50%, rgba(248, 235, 201, 0.95) 0 1.5px, transparent 2.5px),
-        linear-gradient(90deg, transparent, rgba(217, 171, 82, 0.65) 30%, rgba(217, 171, 82, 0.65) 70%, transparent);
     }
 
     .brand-title {
@@ -159,22 +129,7 @@
       filter: drop-shadow(0 0 16px rgba(240, 208, 138, 0.24));
     }
 
-    .brand-sub {
-      margin-top: 3px;
-      font-size: clamp(0.68rem, 1.05vw, 0.85rem);
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      color: var(--gold-300);
-      opacity: 0.9;
-    }
-
-    .brand-sub::before, .brand-sub::after {
-      content: '—';
-      margin: 0 9px;
-      color: rgba(217, 171, 82, 0.55);
-    }
-
-    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .top-actions { display: flex; align-items: center; gap: 6px; }
 
     .student-chip {
       max-width: 30vw;
@@ -184,48 +139,41 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 9px 16px;
-      border-radius: 999px;
-      border: 1px solid rgba(127, 192, 170, 0.5);
-      background: linear-gradient(180deg, rgba(47, 125, 106, 0.38), rgba(31, 92, 77, 0.32));
-      color: #d8f2e6;
+      padding: 6px 4px;
+      color: rgba(216, 242, 230, 0.86);
       font-size: 0.9rem;
       font-weight: 600;
       letter-spacing: 0.02em;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 3px rgba(47, 125, 106, 0.1);
     }
 
     .student-chip::before {
       content: '';
       flex: 0 0 auto;
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: #9fe6cb;
-      box-shadow: 0 0 8px rgba(159, 230, 203, 0.85);
+      background: #8fdcc0;
+      box-shadow: 0 0 7px rgba(159, 230, 203, 0.6);
     }
 
     .icon-pill {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      border: 1px solid rgba(217, 171, 82, 0.55);
-      background: radial-gradient(circle at 50% 26%, rgba(122, 29, 24, 0.75), rgba(45, 10, 8, 0.8));
-      color: var(--gold-300);
-      font-size: 1.08rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: rgba(248, 235, 201, 0.62);
+      font-size: 1.02rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s ease;
-      box-shadow: inset 0 1px 0 rgba(248, 235, 201, 0.12);
+      transition: color 0.2s ease, background-color 0.2s ease;
     }
 
     .icon-pill:hover {
-      border-color: var(--gold-300);
       color: var(--gold-100);
-      transform: translateY(-1px) rotate(8deg);
-      box-shadow: inset 0 1px 0 rgba(248, 235, 201, 0.18), 0 0 18px rgba(217, 171, 82, 0.32);
+      background: rgba(217, 171, 82, 0.1);
     }
 
     /* ----- Sân khấu ----- */
@@ -244,37 +192,24 @@
       justify-content: center;
       align-self: center;
       width: fit-content;
-      gap: 16px;
-      margin: 10px auto 0;
-      padding: 8px 24px 9px;
-      border-radius: 999px;
-      border: 1px solid rgba(217, 171, 82, 0.28);
-      background: linear-gradient(180deg, rgba(38, 9, 7, 0.74), rgba(20, 5, 4, 0.5));
-      font-size: 0.94rem;
-      letter-spacing: 0.04em;
-      color: rgba(247, 237, 216, 0.85);
-      box-shadow: inset 0 1px 0 rgba(248, 235, 201, 0.06), 0 12px 28px rgba(0, 0, 0, 0.32);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+      gap: 12px;
+      margin: 8px auto 0;
+      padding: 0;
+      font-size: 0.9rem;
+      letter-spacing: 0.03em;
+      color: rgba(247, 237, 216, 0.7);
     }
 
-    .progress-strip::before {
-      content: '✦';
-      color: var(--gold-300);
-      font-size: 0.72rem;
-      text-shadow: 0 0 10px rgba(240, 208, 138, 0.7);
-    }
-
-    .progress-strip b { color: var(--gold-300); font-size: 1.14rem; }
+    .progress-strip b { color: var(--gold-300); font-size: 1.08rem; }
 
     .progress-bar {
       position: relative;
-      width: min(270px, 28vw);
-      height: 7px;
+      width: min(300px, 34vw);
+      height: 5px;
       border-radius: 999px;
       background: rgba(217, 171, 82, 0.14);
       overflow: hidden;
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(217, 171, 82, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(217, 171, 82, 0.08);
     }
 
     .progress-bar i {
@@ -284,23 +219,8 @@
       height: 100%;
       border-radius: 999px;
       background: linear-gradient(90deg, var(--gold-700), var(--gold-300) 70%, #fff0c8);
-      box-shadow: 0 0 12px rgba(240, 208, 138, 0.6);
+      box-shadow: 0 0 8px rgba(240, 208, 138, 0.45);
       transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-      overflow: hidden;
-    }
-
-    .progress-bar i::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(100deg, transparent 18%, rgba(255, 248, 224, 0.65) 48%, transparent 78%);
-      transform: translateX(-100%);
-      animation: barSheen 3.6s ease-in-out infinite;
-    }
-
-    @keyframes barSheen {
-      0%, 52% { transform: translateX(-100%); }
-      88%, 100% { transform: translateX(100%); }
     }
 
     .field {
@@ -2111,7 +2031,7 @@
 
     @media (max-width: 960px) {
       body { overflow: auto; }
-      .topbar { flex-wrap: wrap; justify-content: center; }
+      .topbar { flex-wrap: wrap; justify-content: center; gap: 8px 16px; }
       .brand { order: -1; flex-basis: 100%; }
       .top-link { order: 2; }
       .top-actions { order: 3; }
@@ -2174,7 +2094,7 @@
 
     /* Sân khấu thấp: thu gọn riêng sơ đồ ký ức để 3 cụm không chạm nhau */
     @media (max-height: 860px) and (min-width: 961px) {
-      .fragment-inner { justify-content: center; gap: 5px; padding: 20px 22px; }
+      .fragment-inner { justify-content: center; gap: 5px; padding: 20px 22px 20px 30px; }
       .fragment-photos { margin-top: 1px; gap: 6px; }
       .fragment-photo { max-height: 54px; aspect-ratio: 1.5; }
       .fragment-years { margin-top: 0; font-size: clamp(1.12rem, 1.75vw, 1.42rem); }
@@ -2206,8 +2126,7 @@
 
     @media (max-height: 700px) and (min-width: 961px) {
       .topbar { padding-top: 7px; padding-bottom: 7px; }
-      .brand-sub { display: none; }
-      .progress-strip { padding-top: 6px; }
+      .progress-strip { margin-top: 5px; }
       .timeline { min-height: 124px; padding-bottom: 2px; }
       .pin { width: 96px; }
       .pin img { height: 50px; }
@@ -2263,15 +2182,14 @@
   <canvas id="dust-canvas" aria-hidden="true"></canvas>
 
   <header class="topbar">
-    <a class="top-link" id="btn-back-top" href="../index.html">⬅ Về game rương báu</a>
+    <a class="top-link" id="btn-back-top" href="../index.html">← Về game</a>
 
     <div class="brand">
       <div class="brand-title">Giải Mã Đoạn Ký Ức</div>
-      <div class="brand-sub">1965 – 1968 · Theo chân Nguyễn Chí Thanh</div>
     </div>
 
     <div class="top-actions">
-      <span class="student-chip" id="student-chip">👤 Học sinh</span>
+      <span class="student-chip" id="student-chip">Học sinh</span>
       <button class="icon-pill" id="btn-sound" type="button" title="Bật/tắt âm thanh" aria-label="Bật tắt âm thanh">🔊</button>
       <button class="icon-pill" id="btn-reset" type="button" title="Đặt lại tiến độ (giáo viên)" aria-label="Đặt lại tiến độ">↺</button>
     </div>
@@ -2279,7 +2197,7 @@
 
   <main class="stage">
     <div class="progress-strip">
-      <span>Đã giải mã <b id="progress-count">0/7</b> ảnh ký ức</span>
+      <span>Đã giải mã <b id="progress-count">0/7</b></span>
       <span class="progress-bar" aria-hidden="true"><i id="progress-fill"></i></span>
     </div>
 
@@ -2288,7 +2206,7 @@
         <button class="fragment" data-fragment="f1" type="button" style="--clip: url(#piece-a)">
           <span class="fragment-inner">
             <span class="fragment-seal" aria-hidden="true"></span>
-            <span class="fragment-label">Mảnh I</span>
+            <span class="fragment-label">I</span>
             <span class="fragment-photos" data-photos aria-hidden="true"></span>
             <span class="fragment-stamp">ĐÃ GIẢI MÃ</span>
             <span class="fragment-years">1965</span>
@@ -2303,7 +2221,7 @@
         <button class="fragment" data-fragment="f2" type="button" style="--clip: url(#piece-b)">
           <span class="fragment-inner">
             <span class="fragment-seal" aria-hidden="true"></span>
-            <span class="fragment-label">Mảnh II</span>
+            <span class="fragment-label">II</span>
             <span class="fragment-photos" data-photos aria-hidden="true"></span>
             <span class="fragment-stamp">ĐÃ GIẢI MÃ</span>
             <span class="fragment-years">1965 – 1967</span>
@@ -2318,7 +2236,7 @@
         <button class="fragment" data-fragment="f3" type="button" style="--clip: url(#piece-c)">
           <span class="fragment-inner">
             <span class="fragment-seal" aria-hidden="true"></span>
-            <span class="fragment-label">Mảnh III</span>
+            <span class="fragment-label">III</span>
             <span class="fragment-photos" data-photos aria-hidden="true"></span>
             <span class="fragment-stamp">ĐÃ GIẢI MÃ</span>
             <span class="fragment-years">1967 – 1968</span>
@@ -2650,7 +2568,7 @@
     const STORAGE_KEY = 'tracnghiem_1003_progress_v1';
     const FINALE_KEY = 'tracnghiem_1003_finale_seen';
     const TOTAL = QUESTIONS_DATA.length;
-    const FINALE_THRESHOLD = 6;
+    const FINALE_THRESHOLD = TOTAL;
 
     const LATE_MILESTONES = [
       {
@@ -2897,7 +2815,7 @@
         name = fromUrl || '';
       }
 
-      studentChip.textContent = name ? `👤 ${name}` : '👤 Học sinh';
+      studentChip.textContent = name || 'Học sinh';
     }
 
     function buildChestUrl() {
